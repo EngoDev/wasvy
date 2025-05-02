@@ -1,0 +1,59 @@
+package component:protocol;
+
+/// An example world for the component to target.
+world ecs {
+	use types.{query-data};
+    export hello-world: func() -> string;
+	export setup: func();
+	export sum: func(params: list<list<query-data>>);
+
+	import host-ecs;
+}
+
+
+interface host-ecs{
+	use types.{entity, query, component-id, component, component-descriptor};
+	register-system: func(name: string, query: list<query>);
+	//register-component: func(path: string, descriptor: component-descriptor) -> component-id;
+	register-component: func(path: string) -> component-id;
+	get-component-id: func(path: string) -> option<component-id>;
+	spawn: func(components: list<component>) -> entity;
+}
+
+interface types {
+	//type component-id = tuple<u64,u64>;
+	type component-id = u64;
+	type entity = u64;
+
+	
+	record component-descriptor {
+		name: string,
+		size: u64,
+		alignment: u64,
+	}
+
+	record component {
+		id: component-id,
+		value: string
+	}
+
+	record query {
+		components: list<component-id>,
+		//with: list<component-id>,
+		//without: list<component-id>
+	}
+
+	// This is one row for one query parameter
+	record query-data {
+		components: list<component>,
+		entity: entity
+	}
+
+	//record system-descriptor {
+		
+	//}
+
+	//record world {
+	//	components: list<component>
+	//}
+}
