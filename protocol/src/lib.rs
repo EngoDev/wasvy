@@ -18,6 +18,10 @@ struct GuestComponent {
     // components: HashMap<String, ComponentId>,
 }
 
+pub trait Test {}
+
+impl Test for Query {}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FirstComponent {
     pub first: usize,
@@ -35,11 +39,11 @@ impl Guest for GuestComponent {
     }
 
     fn sum(params: Vec<Vec<bindings::QueryData>>) {
-        let first_component_query = params.iter().next().unwrap();
+        let first_component_query = params.first().unwrap();
         for row in first_component_query {
             let entity = row.entity;
             println!("Entity: {:?}", entity);
-            let component = row.components.iter().next().unwrap();
+            let component = row.components.first().unwrap();
             let first_component: FirstComponent = serde_json::from_str(&component.value).unwrap();
             println!("Component: {:?}", first_component);
         }

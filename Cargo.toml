@@ -1,6 +1,5 @@
 [package]
-name = "bevy_wasm"
-version = "0.1.0"
+name = "wasvy"
 edition = "2024"
 
 [workspace]
@@ -10,9 +9,15 @@ resolver = "2"
 [workspace.package]
 authors = ["EngoDev"]
 categories = []
-edition = "2021"
+# edition = "2021"
 rust-version = "1.85.0"
-version = "0.1.0"
+version = "0.0.1"
+edition = "2024"
+description = "Bevy WASM"
+license = "MIT"
+homepage = "https://github.com/EngoDev"
+repository = "https://github.com/EngoDev"
+readme = "README.md"
 
 [dependencies]
 anyhow = "1.0.98"

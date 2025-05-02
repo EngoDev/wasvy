@@ -1,5 +1,8 @@
 use bevy::{
-    ecs::{component::ComponentId, world::FilteredEntityRef},
+    ecs::{
+        component::{Component as BevyComponent, ComponentId, ComponentMutability, Immutable},
+        world::FilteredEntityRef,
+    },
     prelude::*,
 };
 use wasmtime::{
@@ -15,6 +18,14 @@ use crate::{
     },
     host::{WasmComponent, WasmGuestSystem, WasmHost},
 };
+
+// pub trait Test: Component {}
+
+impl BevyComponent for QueryData {
+    type Mutability = Immutable;
+    const STORAGE_TYPE: bevy::ecs::component::StorageType =
+        bevy::ecs::component::StorageType::Table;
+}
 
 pub struct States<'a> {
     table: ResourceTable,

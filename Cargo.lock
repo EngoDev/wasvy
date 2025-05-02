@@ -1470,19 +1470,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bevy_wasm"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bevy",
- "bevy-inspector-egui",
- "serde",
- "serde_json",
- "wasmtime",
- "wasmtime-wasi",
-]
-
-[[package]]
 name = "bevy_window"
 version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4774,7 +4761,7 @@ dependencies = [
 
 [[package]]
 name = "protocol"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "ehttp",
  "serde",
@@ -6621,6 +6608,19 @@ dependencies = [
  "memchr",
  "unicode-width 0.2.0",
  "wasm-encoder 0.229.0",
+]
+
+[[package]]
+name = "wasvy"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "bevy",
+ "bevy-inspector-egui",
+ "serde",
+ "serde_json",
+ "wasmtime",
+ "wasmtime-wasi",
 ]
 
 [[package]]

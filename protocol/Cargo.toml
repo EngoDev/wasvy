@@ -1,7 +1,13 @@
 [package]
 name = "protocol"
-version = "0.1.0"
-edition = "2024"
+# version = "0.1.0"
+# edition = "2024"
+
+authors.workspace = true
+categories.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
 
 [dependencies]
 wit-bindgen-rt = { version = "0.41.0", features = ["bitflags"] }
