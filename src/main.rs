@@ -1,8 +1,10 @@
 use std::{alloc::Layout, borrow::Cow};
 
+use bevy::prelude::*;
 use bevy::{
     DefaultPlugins, MinimalPlugins,
     app::App,
+    asset::AssetPlugin,
     ecs::{
         component::{Component as BevyComponent, ComponentDescriptor},
         world::{World, WorldId},
@@ -23,22 +25,22 @@ use wasmtime_wasi::{self, IoView};
 use wasmtime::component::ResourceTable;
 use wasmtime_wasi::{WasiCtx, WasiCtxBuilder, WasiView};
 
+mod asset;
 mod host;
 mod host_plugin;
+mod runner;
 
 mod bindings {
-    wasmtime::component::bindgen!("ecs" in "./protocol/wit/world.wit");
-    // wasmtime::component::bindgen!({
-    //     paths: "./protocol/wit/world.wit",
-    //     world: "ecs",
-    //     async: false
-    // })
+    wasmtime::component::bindgen!("host" in "wit/ecs/ecs.wit");
 }
 
 fn main() -> anyhow::Result<()> {
     let mut app = App::new();
 
-    app.add_plugins(DefaultPlugins);
+    app.add_plugins(DefaultPlugins.set(AssetPlugin {
+        watch_for_changes_override: Some(true),
+        ..Default::default()
+    }));
     app.add_plugins(EguiPlugin {
         enable_multipass_for_primary_context: true,
     });

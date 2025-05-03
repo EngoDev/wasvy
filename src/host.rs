@@ -1,21 +1,26 @@
 use std::alloc::Layout;
 use std::borrow::Cow;
 
+use bevy::asset::{AssetId, Handle};
 use bevy::ecs::bundle::{Bundle, DynamicBundle};
 use bevy::ecs::component::{
     Component as BevyComponent, ComponentDescriptor as BevyComponentDescriptor, ComponentId,
     StorageType,
 };
 use bevy::ecs::entity::Entity;
+use bevy::ecs::system::Commands;
 use bevy::ecs::world::World;
 use bevy::ptr::OwningPtr;
 // use crate::bindings::component::protocol::host_ecs;
 use serde::{Deserialize, Serialize};
 
-use crate::bindings::component::protocol::host_ecs;
+use crate::asset::WasmComponentAsset;
+// use crate::bindings::component::host_ecsprotocol::host_ecs;
+use crate::bindings::wasvy::ecs::types;
 
 pub struct WasmHost<'a> {
     pub world: &'a mut World,
+    pub wasm_asset_id: AssetId<WasmComponentAsset>,
 }
 
 #[derive(BevyComponent, Serialize, Deserialize)]
@@ -27,7 +32,8 @@ pub struct WasmComponent {
 #[derive(Clone, BevyComponent)]
 pub struct WasmGuestSystem {
     pub name: String,
-    pub queries: wasmtime::component::__internal::Vec<host_ecs::Query>,
+    pub queries: wasmtime::component::__internal::Vec<types::Query>,
+    pub wasm_asset_id: AssetId<WasmComponentAsset>,
 }
 
 fn create_component_descriptor(name: impl Into<Cow<'static, str>>) -> BevyComponentDescriptor {
@@ -43,12 +49,12 @@ fn create_component_descriptor(name: impl Into<Cow<'static, str>>) -> BevyCompon
     }
 }
 
-impl host_ecs::Host for WasmHost<'_> {
+impl crate::bindings::wasvy::ecs::functions::Host for WasmHost<'_> {
     fn register_component(
         &mut self,
         path: wasmtime::component::__internal::String,
         // descriptor: host_ecs::ComponentDescriptor,
-    ) -> host_ecs::ComponentId {
+    ) -> types::ComponentId {
         self.world
             .register_component_with_descriptor(create_component_descriptor(Cow::from(path)))
             .index() as u64
@@ -57,18 +63,19 @@ impl host_ecs::Host for WasmHost<'_> {
     fn register_system(
         &mut self,
         name: wasmtime::component::__internal::String,
-        query: wasmtime::component::__internal::Vec<host_ecs::Query>,
+        query: wasmtime::component::__internal::Vec<types::Query>,
     ) {
         self.world.spawn(WasmGuestSystem {
             name,
             queries: query,
+            wasm_asset_id: self.wasm_asset_id.clone(),
         });
     }
 
     fn get_component_id(
         &mut self,
         path: wasmtime::component::__internal::String,
-    ) -> Option<host_ecs::ComponentId> {
+    ) -> Option<types::ComponentId> {
         for component_info in self.world.components().iter_registered() {
             if *component_info.name().to_string() == path.to_string() {
                 return Some(component_info.id().index() as u64);
@@ -80,8 +87,8 @@ impl host_ecs::Host for WasmHost<'_> {
 
     fn spawn(
         &mut self,
-        components: wasmtime::component::__internal::Vec<host_ecs::Component>,
-    ) -> host_ecs::Entity {
+        components: wasmtime::component::__internal::Vec<types::Component>,
+    ) -> types::Entity {
         // let component_ids: Vec<ComponentId> = components
         //     .iter()
         //     .map(|component_id| ComponentId::new(*component_id as usize))
@@ -109,6 +116,13 @@ impl host_ecs::Host for WasmHost<'_> {
 
         entity.id().index() as u64
         //insert_by_id(component_id, value)
+    }
+
+    fn this_function_does_nothing(
+        &mut self,
+        entry: crate::bindings::wasvy::ecs::types::QueryResultEntry,
+        query_result: crate::bindings::wasvy::ecs::types::QueryResult,
+    ) {
     }
 }
 

@@ -1,27 +1,28 @@
 [package]
-name = "wasvy-host"
-# version = "0.1.0"
-# edition = "2024"
-
+name = "simple"
 authors.workspace = true
 categories.workspace = true
-edition.workspace = true
 rust-version.workspace = true
 version.workspace = true
+edition.workspace = true
+description.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+readme.workspace = true
 
 [dependencies]
-wit-bindgen-rt = { version = "0.41.0", features = ["bitflags"] }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
-ehttp = "0.5.0"
+wit-bindgen-rt = { version = "0.41.0", features = ["bitflags"] }
 
 [lib]
 crate-type = ["cdylib"]
 
 [package.metadata.component]
-package = "wasvy:host"
+package = "component:simple"
 
 [package.metadata.component.dependencies]
 
 [package.metadata.component.target.dependencies]
-"wasvy:ecs" = { path = "/home/engodev/projects/wasm/wasvy/protocol/wit/ecs"}
+"wasvy:ecs" = { path = "/home/engodev/projects/wasm/wasvy/examples/simple/wit/deps/wasvy-ecs"}

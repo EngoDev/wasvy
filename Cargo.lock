@@ -447,6 +447,7 @@ version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2a5cd3b24a5adb7c7378da7b3eea47639877643d11b6b087fc8a8094f2528615"
 dependencies = [
+ "bevy_dylib",
  "bevy_internal",
 ]
 
@@ -708,6 +709,15 @@ dependencies = [
  "log",
  "serde",
  "sysinfo",
+]
+
+[[package]]
+name = "bevy_dylib"
+version = "0.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "843c7ce266dfc46e49d01fbf9aa1829d33b70a1859b9ed6a526ac03070c52e97"
+dependencies = [
+ "bevy_internal",
 ]
 
 [[package]]
@@ -4760,16 +4770,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "protocol"
-version = "0.0.1"
-dependencies = [
- "ehttp",
- "serde",
- "serde_json",
- "wit-bindgen-rt 0.41.0",
-]
-
-[[package]]
 name = "psm"
 version = "0.1.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5387,6 +5387,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "95890f873bec569a0362c235787f3aca6e1e887302ba4840839bcc6459c42da6"
 dependencies = [
  "quote",
+]
+
+[[package]]
+name = "simple"
+version = "0.0.1"
+dependencies = [
+ "serde",
+ "serde_json",
+ "wit-bindgen-rt 0.41.0",
 ]
 
 [[package]]
@@ -6619,8 +6628,20 @@ dependencies = [
  "bevy-inspector-egui",
  "serde",
  "serde_json",
+ "thiserror 2.0.12",
  "wasmtime",
  "wasmtime-wasi",
+ "wit-bindgen-rt 0.41.0",
+]
+
+[[package]]
+name = "wasvy-host"
+version = "0.0.1"
+dependencies = [
+ "ehttp",
+ "serde",
+ "serde_json",
+ "wit-bindgen-rt 0.41.0",
 ]
 
 [[package]]

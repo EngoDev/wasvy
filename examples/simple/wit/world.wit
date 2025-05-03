@@ -1,0 +1,15 @@
+package component:simple;
+
+
+/// An example world for the component to target.
+world example {
+	import wasvy:ecs/functions;
+	/// This is important.
+	/// This makes it so the WASM module must implement the guest required functions by the Bevy host.
+	include wasvy:ecs/guest;
+
+	use wasvy:ecs/types.{query-result};
+
+    export hello-world: func() -> string;
+	export print-first-component-system: func(params: list<query-result>);
+}

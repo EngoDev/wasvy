@@ -1,6 +1,9 @@
+use std::collections::{HashMap, HashSet};
+
 use bevy::{
     ecs::{
         component::{Component as BevyComponent, ComponentId, ComponentMutability, Immutable},
+        system::SystemState,
         world::FilteredEntityRef,
     },
     prelude::*,
@@ -12,19 +15,88 @@ use wasmtime::{
 use wasmtime_wasi::{IoView, ResourceTable, WasiCtx, WasiCtxBuilder, WasiView};
 
 use crate::{
+    asset::{WasmComponentAsset, WasmComponentAssetLoader},
     bindings::{
         self,
-        component::protocol::types::{Component as BindingComponent, QueryData},
+        wasvy::ecs::types::{self, Component as BindingComponent, QueryResultEntry},
     },
     host::{WasmComponent, WasmGuestSystem, WasmHost},
+    runner::{Runner, WasmRunState},
 };
 
 // pub trait Test: Component {}
 
-impl BevyComponent for QueryData {
-    type Mutability = Immutable;
-    const STORAGE_TYPE: bevy::ecs::component::StorageType =
-        bevy::ecs::component::StorageType::Table;
+// impl BevyComponent for QueryResult {
+//     type Mutability = Immutable;
+//     const STORAGE_TYPE: bevy::ecs::component::StorageType =
+//         bevy::ecs::component::StorageType::Table;
+// }
+
+struct WasmSystemWithParams {
+    pub system: WasmGuestSystem,
+    pub system_param: Vec<wasmtime::component::Val>,
+}
+
+impl WasmSystemWithParams {
+    pub fn new(guest_system: WasmGuestSystem, world: &mut World) -> Self {
+        Self {
+            system_param: Self::create_system_params(guest_system.queries.clone(), world),
+            system: guest_system,
+        }
+    }
+
+    fn create_system_params(
+        queries: wasmtime::component::__internal::Vec<types::Query>,
+        world: &mut World,
+    ) -> Vec<wasmtime::component::Val> {
+        let mut system_param: Vec<wasmtime::component::Val> = vec![];
+
+        for query in &queries {
+            let mut data = QueryBuilder::<FilteredEntityRef>::new(world);
+            // let mut access = FilteredAccess::default();
+            for component_index in &query.components {
+                data.ref_id(ComponentId::new(*component_index as usize));
+                // println!(
+                //     "Adding component: {:?}, {:?}",
+                //     component_index,
+                //     world
+                //         .components()
+                //         .get_name(ComponentId::new(*component_index as usize))
+                //         .unwrap()
+                //         .clone()
+                // );
+            }
+
+            let mut query_state = data.build();
+            let data = query_state.iter(world);
+
+            let mut query_rows = vec![];
+            for row in data.into_iter() {
+                // println!("Row: {:?}", row.id());
+                let mut components: Vec<BindingComponent> = vec![];
+                for component_index in &query.components {
+                    let component_a = unsafe {
+                        row.get_by_id(ComponentId::new(*component_index as usize))
+                            .unwrap()
+                            .deref::<WasmComponent>()
+                    };
+                    components.push(BindingComponent {
+                        id: *component_index,
+                        value: component_a.serialized_value.clone(),
+                    });
+                    // let a = serde_json::to_string(&component_a);
+                }
+                query_rows.push(record_from_query_result_entry(QueryResultEntry {
+                    entity: row.id().index() as u64,
+                    components,
+                }));
+            }
+
+            system_param.push(wasmtime::component::Val::List(query_rows));
+        }
+
+        system_param
+    }
 }
 
 pub struct States<'a> {
@@ -63,11 +135,36 @@ impl<'a> WasiView for States<'a> {
 
 pub struct HostPlugin;
 
+#[derive(Resource)]
+struct WasmAssets {
+    pub assests: Vec<Handle<WasmComponentAsset>>,
+}
+
+#[derive(Resource, Clone, Deref)]
+pub struct WasmEngine(Engine);
+
 impl Plugin for HostPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, run_setup);
-        app.add_systems(Update, run_systems);
+        app.add_systems(Startup, load_wasm_modules);
+        app.add_systems(Update, (run_setup, run_systems));
+
+        let engine = Engine::default();
+
+        app.init_asset::<WasmComponentAsset>()
+            .register_asset_loader(WasmComponentAssetLoader {
+                engine: engine.clone(),
+            });
+
+        app.insert_resource(WasmEngine(engine));
     }
+}
+
+fn load_wasm_modules(mut commands: Commands, asset_server: Res<AssetServer>) {
+    let handle = asset_server.load::<WasmComponentAsset>("simple.wasm");
+
+    commands.insert_resource(WasmAssets {
+        assests: vec![handle],
+    });
 }
 
 fn run_systems(world: &mut World) {
@@ -78,89 +175,89 @@ fn run_systems(world: &mut World) {
         .cloned()
         .collect();
 
-    for wasm_system in wasm_systems.iter() {
-        // let mut args: Vec<wasmtime::component::Val> = vec![];
-        let mut system_param: Vec<wasmtime::component::Val> = vec![];
+    let assests: HashMap<AssetId<WasmComponentAsset>, WasmComponentAsset> = world
+        .get_resource::<Assets<WasmComponentAsset>>()
+        .unwrap()
+        .iter()
+        .map(|(id, asset)| (id, asset.clone()))
+        .collect();
 
-        for query in &wasm_system.queries {
-            let mut data = QueryBuilder::<FilteredEntityRef>::new(world);
-            // let mut access = FilteredAccess::default();
-            for component_index in &query.components {
-                data.ref_id(ComponentId::new(*component_index as usize));
-                // println!(
-                //     "Adding component: {:?}, {:?}",
-                //     component_index,
-                //     world
-                //         .components()
-                //         .get_name(ComponentId::new(*component_index as usize))
-                //         .unwrap()
-                //         .clone()
-                // );
-            }
+    let engine = world.get_resource::<WasmEngine>().unwrap().clone();
 
-            let mut query_state = data.build();
-            let data = query_state.iter(world);
+    // let engine = Engine::default();
+    // let module = Component::from_file(&engine, "guest3.wasm").unwrap();
+    // let mut linker = Linker::new(&engine);
+    // wasmtime_wasi::add_to_linker_sync(&mut linker).expect("Could not add wasi to linker");
 
-            let mut query_rows = vec![];
-            for row in data.into_iter() {
-                // println!("Row: {:?}", row.id());
-                let mut components: Vec<BindingComponent> = vec![];
-                for component_index in &query.components {
-                    let component_a = unsafe {
-                        row.get_by_id(ComponentId::new(*component_index as usize))
-                            .unwrap()
-                            .deref::<WasmComponent>()
-                    };
-                    components.push(BindingComponent {
-                        id: *component_index,
-                        value: component_a.serialized_value.clone(),
-                    });
-                    // let a = serde_json::to_string(&component_a);
-                }
-                query_rows.push(record_from_query_data(QueryData {
-                    entity: row.id().index() as u64,
-                    components,
-                }));
-            }
+    let mut runner = Runner::new(engine.0);
+    runner.add_wasi_sync();
 
-            system_param.push(wasmtime::component::Val::List(query_rows));
-        }
-
-        let wasm_host = WasmHost { world };
-        let engine = Engine::default();
-        let module = Component::from_file(&engine, "guest3.wasm").unwrap();
-
-        let wasi_view = States::new(wasm_host);
-        let mut store = Store::new(&engine, wasi_view);
-        let mut linker = Linker::new(&engine);
-
-        wasmtime_wasi::add_to_linker_sync(&mut linker).expect("Could not add wasi to linker");
-        bindings::component::protocol::host_ecs::add_to_linker(
-            &mut linker,
-            |state: &mut States| &mut state.host_ecs,
-        )
+    runner.add_functionality_to_linker(|linker| {
+        bindings::wasvy::ecs::functions::add_to_linker(linker, |state: &mut States| {
+            &mut state.host_ecs
+        })
         .unwrap();
+    });
 
-        let instance = linker.instantiate(&mut store, &module).unwrap();
-        let func: Func = instance
-            .get_func(&mut store, wasm_system.name.to_string())
-            .expect("`WasmGuestSystem system name` not found");
+    let systems: Vec<WasmSystemWithParams> = wasm_systems
+        .into_iter()
+        .map(|system| WasmSystemWithParams::new(system, world))
+        .collect();
+
+    // bindings::wasvy::ecs::functions::add_to_linker(&mut runner.linker, |state: &mut States| {
+    //     &mut state.host_ecs
+    // })
+    // .unwrap();
+
+    for wasm_system in systems.iter() {
+        let wasm_host = WasmHost {
+            world,
+            wasm_asset_id: wasm_system.system.wasm_asset_id,
+        };
+        let wasi_view = States::new(wasm_host);
+        let store = Store::new(&runner.engine, wasi_view);
+        let module = assests.get(&wasm_system.system.wasm_asset_id).unwrap();
 
         let mut results = vec![];
-        // println!("Args: {:?}", args);
-        // if args.len() == 0 {
-        //     continue;
-        // }
-        func.call(
+        runner.run_function(WasmRunState {
+            component: &module.component,
             store,
-            &[wasmtime::component::Val::List(system_param)],
-            &mut results,
-        )
-        .unwrap();
+            function_name: wasm_system.system.name.clone(),
+            params: &[wasmtime::component::Val::List(
+                wasm_system.system_param.clone(),
+            )],
+            results: &mut results,
+        });
+        // let mut args: Vec<wasmtime::component::Val> = vec![];
+        // bindings::wasvy::ecs::ecs::#[cfg(test)]
+        // bindings::component::protocol::host_ecs::add_to_linker(
+        //     &mut linker,
+        //     |state: &mut States| &mut state.host_ecs,
+        // )
+        // .unwrap();
+
+        // let instance = linker.instantiate(&mut store, &module).unwrap();
+        // let func: Func = instance
+        //     .get_func(&mut store, wasm_system.system.name.to_string())
+        //     .expect("`WasmGuestSystem system name` not found");
+        //
+        // let mut results = vec![];
+        // // println!("Args: {:?}", args);
+        // // if args.len() == 0 {
+        // //     continue;
+        // // }
+        // func.call(
+        //     store,
+        //     &[wasmtime::component::Val::List(
+        //         wasm_system.system_param.clone(),
+        //     )],
+        //     &mut results,
+        // )
+        // .unwrap();
     }
 }
 
-fn record_from_query_data(data: QueryData) -> wasmtime::component::Val {
+fn record_from_query_result_entry(data: QueryResultEntry) -> wasmtime::component::Val {
     let components: Vec<wasmtime::component::Val> = data
         .components
         .into_iter()
@@ -189,32 +286,104 @@ fn record_from_query_data(data: QueryData) -> wasmtime::component::Val {
     ])
 }
 
-fn run_setup(world: &mut World) {
-    let wasm_host = WasmHost { world };
-    let engine = Engine::default();
-    let module = Component::from_file(&engine, "guest3.wasm").unwrap();
+fn run_setup(world: &mut World, mut already_ran: Local<HashSet<AssetId<WasmComponentAsset>>>) {
+    // let mut asset_events = world.query::<EventReader<AssetEvent<WasmComponentAsset>>>();
+    // let mut asset_events = world.get_resource::<Events<AssetEvent<WasmComponentAsset>>>();
+    // let mut assets = world.get_resource_mut()
+    let mut system_state: SystemState<(
+        EventReader<AssetEvent<WasmComponentAsset>>,
+        ResMut<Assets<WasmComponentAsset>>,
+    )> = SystemState::new(world);
 
-    let wasi_view = States::new(wasm_host);
-    let mut store = Store::new(&engine, wasi_view);
-    let mut linker = Linker::new(&engine);
+    let assets_to_setup = {
+        let (mut asset_events, assets) = system_state.get_mut(world);
 
-    wasmtime_wasi::add_to_linker_sync(&mut linker).expect("Could not add wasi to linker");
-    bindings::component::protocol::host_ecs::add_to_linker(&mut linker, |state: &mut States| {
-        &mut state.host_ecs
-    })
-    .unwrap();
+        let mut assets_to_setup: Vec<(AssetId<WasmComponentAsset>, WasmComponentAsset)> = vec![];
+        for ev in asset_events.read() {
+            match ev {
+                AssetEvent::LoadedWithDependencies { id } => {
+                    println!("Got the message!");
+                    let wasm_asset = assets.get(*id).unwrap();
+                    if !already_ran.contains(id) {
+                        assets_to_setup.push((*id, wasm_asset.clone()));
+                        already_ran.insert(*id);
+                    }
+                }
+                AssetEvent::Modified { id } => {
+                    println!("Modified!!!");
+                    let wasm_asset = assets.get(*id).unwrap();
+                    assets_to_setup.push((*id, wasm_asset.clone()));
+                }
+                _ => {}
+            }
+        }
 
-    let instance = linker.instantiate(&mut store, &module).unwrap();
+        assets_to_setup
+    };
 
-    let func: Func = instance
-        .get_func(&mut store, "setup")
-        .expect("`setup` not found");
+    println!("Assets: {:?}", assets_to_setup.len());
+    if assets_to_setup.is_empty() {
+        return;
+    }
 
-    let args = [];
-    // let mut results = vec![Val::String("".to_string())];
+    let engine = world.get_resource::<WasmEngine>().unwrap().clone();
+
+    let mut runner = Runner::new(engine.0);
+    runner.add_wasi_sync();
+
+    runner.add_functionality_to_linker(|linker| {
+        bindings::wasvy::ecs::functions::add_to_linker(linker, |state: &mut States| {
+            &mut state.host_ecs
+        })
+        .unwrap();
+    });
+
+    let params = [];
     let mut results = vec![];
-    func.call(store, &args, &mut results).unwrap();
+    for (id, asset) in assets_to_setup {
+        let wasm_host = WasmHost {
+            world,
+            wasm_asset_id: id,
+        };
+        let wasi_view = States::new(wasm_host);
+        let store = Store::new(&runner.engine, wasi_view);
 
-    // println!("Params: {:?}, Results: {:?}", ty.params(), ty.results());
-    // println!("Results: {:?}", results);
+        runner.run_function(WasmRunState {
+            component: &asset.component,
+            function_name: "setup".to_string(),
+            store,
+            params: &params,
+            results: &mut results,
+        });
+    }
 }
+
+// fn run_setup1(world: &mut World) {
+//     let wasm_host = WasmHost { world };
+//     let engine = Engine::default();
+//     let module = Component::from_file(&engine, "guest3.wasm").unwrap();
+//
+//     let wasi_view = States::new(wasm_host);
+//     let mut store = Store::new(&engine, wasi_view);
+//     let mut linker = Linker::new(&engine);
+//
+//     wasmtime_wasi::add_to_linker_sync(&mut linker).expect("Could not add wasi imports to linker");
+//     bindings::wasvy::ecs::functions::add_to_linker(&mut linker, |state: &mut States| {
+//         &mut state.host_ecs
+//     })
+//     .unwrap();
+//
+//     let instance = linker.instantiate(&mut store, &module).unwrap();
+//
+//     let func: Func = instance
+//         .get_func(&mut store, "setup")
+//         .expect("`setup` not found");
+//
+//     let args = [];
+//     // let mut results = vec![Val::String("".to_string())];
+//     let mut results = vec![];
+//     func.call(store, &args, &mut results).unwrap();
+//
+//     // println!("Params: {:?}, Results: {:?}", ty.params(), ty.results());
+//     // println!("Results: {:?}", results);
+// }

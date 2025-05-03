@@ -1,26 +1,16 @@
 #[allow(warnings)]
 mod bindings;
 
-// use std::collections::HashMap;
-
-use std::time::Duration;
-
 use bindings::{
     Guest,
-    component::protocol::{
-        host_ecs,
-        types::{Component, ComponentId, Query},
+    wasvy::{
+        self,
+        ecs::types::{Component, Query},
     },
 };
 use serde::{Deserialize, Serialize};
 
-struct GuestComponent {
-    // components: HashMap<String, ComponentId>,
-}
-
-pub trait Test {}
-
-impl Test for Query {}
+struct GuestComponent;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FirstComponent {
@@ -33,12 +23,11 @@ pub struct SecondComponent {
 }
 
 impl Guest for GuestComponent {
-    /// Say hello!
     fn hello_world() -> String {
         "Hello, World!".to_string()
     }
 
-    fn sum(params: Vec<bindings::QueryResult>) {
+    fn print_first_component_system(params: Vec<bindings::QueryResult>) {
         let first_component_query = params.first().unwrap();
         for row in first_component_query {
             let entity = row.entity;
@@ -52,11 +41,11 @@ impl Guest for GuestComponent {
     }
 
     fn setup() {
-        let id1 = host_ecs::register_component("FirstComponent");
-        let id2 = host_ecs::register_component("SecondComponent");
+        let id1 = wasvy::ecs::functions::register_component("FirstComponent");
+        let id2 = wasvy::ecs::functions::register_component("SecondComponent");
 
-        host_ecs::register_system(
-            "sum",
+        wasvy::ecs::functions::register_system(
+            "print-first-component-system",
             &[Query {
                 components: vec![id1],
                 with: vec![],
@@ -64,8 +53,8 @@ impl Guest for GuestComponent {
             }],
         );
 
-        let serialized = serde_json::to_string(&FirstComponent { first: 12 }).unwrap();
-        host_ecs::spawn(&[Component {
+        let serialized = serde_json::to_string(&FirstComponent { first: 17 }).unwrap();
+        wasvy::ecs::functions::spawn(&[Component {
             id: id1,
             value: serialized,
         }]);
@@ -73,10 +62,10 @@ impl Guest for GuestComponent {
 }
 
 pub fn fetch_my_ip() {
-    let request = ehttp::Request::get("https://icanhazip.com");
-    ehttp::fetch(request, move |result: ehttp::Result<ehttp::Response>| {
-        println!("Body: {}", result.unwrap().text().unwrap());
-    });
+    // let request = ehttp::Request::get("https://icanhazip.com");
+    // ehttp::fetch(request, move |result: ehttp::Result<ehttp::Response>| {
+    //     println!("Body: {}", result.unwrap().text().unwrap());
+    // });
     // let body = reqwest::blocking::get("https://icanhazip.com")
     //     .unwrap()
     //     .text()

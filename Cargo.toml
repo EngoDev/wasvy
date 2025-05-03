@@ -3,7 +3,7 @@ name = "wasvy"
 edition = "2024"
 
 [workspace]
-members = ["protocol"]
+members = [ "examples/simple","protocol"]
 resolver = "2"
 
 [workspace.package]
@@ -19,11 +19,22 @@ homepage = "https://github.com/EngoDev"
 repository = "https://github.com/EngoDev"
 readme = "README.md"
 
+# enable a small amount of optimization in debug mode
+[profile.dev]
+opt-level = 1
+
+# enable high optimizations for dependencies (incl. Bevy), but not for our code
+[profile.dev.package."*"]
+opt-level = 3
+
+
 [dependencies]
 anyhow = "1.0.98"
-bevy = { version = "0.16.0", features = ["wayland"]}
+bevy = { version = "0.16.0", features = ["wayland", "dynamic_linking"]}
 bevy-inspector-egui = "0.31.0"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
+thiserror = "2.0.12"
 wasmtime = { version = "32.0.0", features = ["component-model"] }
 wasmtime-wasi = "32.0.0"
+wit-bindgen-rt = { version = "0.41.0", features = ["bitflags"] }
