@@ -189,31 +189,6 @@ Check out the examples directory for more detailed usage:
 - [`examples/simple`](examples/simple): Basic WASM component in Rust.
 - [`examples/python_example`](examples/python_example): Basic WASM component in Python.
 
-## Roadmap
-
-### Phase 1: Core Integration (Current)
-- [x] Basic WASM component loading
-- [x] WASI support
-- [ ] Component lifecycle management
-- [ ] Parallel WASM system execution.
-- [ ] Macros in Rust WASM components for making registring Bevy compoennts and systems more ergonomic. 
-- [ ] Mutable query data in systems.
-- [ ] Error handling improvements
-
-
-### Phase 2: Enhanced Features
-- [ ] Hot reloading support for WASM components
-- [ ] Test suite
-- [ ] Cross-component communication
-- [ ] Performance optimizations
-- [ ] Add javascript example
-- [ ] Add go example
-
-### Phase 3: Production Ready
-- [ ] Comprehensive documentation
-- [ ] Benchmarking suite
-- [ ] Stable API
-
 ## Contributing
 
 Contributions come in many forms, and I welcome all kinds of help! Here's how you can contribute:
@@ -246,6 +221,31 @@ Please make sure to:
 - Update documentation as needed
 - Keep the alpha status in mind when proposing changes
 
+## Roadmap
+
+### Phase 1: Core Integration (Current)
+- [x] Basic WASM component loading
+- [x] WASI support
+- [ ] Component lifecycle management
+- [ ] Parallel WASM system execution.
+- [ ] Macros in Rust WASM components for making registring Bevy compoennts and systems more ergonomic.
+- [ ] Mutable query data in systems.
+- [ ] Error handling improvements
+
+
+### Phase 2: Enhanced Features
+- [ ] Hot reloading support for WASM components
+- [ ] Test suite
+- [ ] Cross-component communication
+- [ ] Performance optimizations
+- [ ] Add javascript example
+- [ ] Add go example
+
+### Phase 3: Production Ready
+- [ ] Comprehensive documentation
+- [ ] Benchmarking suite
+- [ ] Stable API
+
 ## Resources
 
 - [WASM Component Model Documentation](https://component-model.bytecodealliance.org/introduction.html) - The best resource on WIT and how the WASM component model works in practicality. 
@@ -258,7 +258,14 @@ Please make sure to:
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is dual-licensed under either:
+
+- MIT License ([LICENSE-MIT](LICENSE-MIT))
+- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE))
+
+## Your contributions
+
+Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
 
 ## Acknowledgments
 
