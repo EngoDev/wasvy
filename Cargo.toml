@@ -3,7 +3,7 @@ name = "wasvy"
 edition = "2024"
 
 [workspace]
-members = ["examples/simple"]
+members = [ "examples/host_example","examples/simple"]
 resolver = "2"
 
 [workspace.package]

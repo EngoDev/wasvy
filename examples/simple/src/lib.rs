@@ -27,6 +27,11 @@ impl Guest for GuestComponent {
         "Hello, World!".to_string()
     }
 
+    /// The params in this instance will be equal to: `[Query<FirstComponent>]`
+    /// due to how the system was registered in `setup`.
+    ///
+    /// If for example the system was registered with `components: [id1, id2]`
+    /// then params would be equal to `[Query<FirstComponent>, Query<SecondComponent>]`
     fn print_first_component_system(params: Vec<bindings::QueryResult>) {
         let first_component_query = params.first().unwrap();
         for row in first_component_query {

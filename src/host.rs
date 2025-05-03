@@ -11,8 +11,11 @@ use serde::{Deserialize, Serialize};
 use crate::asset::WasmComponentAsset;
 use crate::bindings::wasvy::ecs::types;
 
+/// The implemenation of the ECS host functions that the WASM components use for interacting with
+/// Bevy.
 pub struct WasmHost<'a> {
     pub world: &'a mut World,
+    /// The WASM component this host is going to be used on.
     pub wasm_asset_id: AssetId<WasmComponentAsset>,
 }
 

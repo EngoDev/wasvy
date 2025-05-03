@@ -56,6 +56,11 @@ interface types {
 	///		components: [functions:get-component-id("Name")],
 	///		without: [functions:get-component-id("Transform")],
 	/// }
+	///
+	/// # Important
+	///
+	/// The index for each component-id you put in `components` matters because that will be the order
+	/// of retrival from the param argument in your system.
 	record query {
 		components: list<component-id>,
 		%with: list<component-id>,

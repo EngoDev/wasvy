@@ -10,6 +10,10 @@ world guest {
 
 	use wasvy:ecs/types.{query-result};
 
+	/// This exported function can't be called automatically from Wasvy
+	/// because it doesn't comply to the desired signature.
     export hello-world: func() -> string;
+
+    /// All systems must only have one argument of type `list<query-result>`
 	export print-first-component-system: func(params: list<query-result>);
 }

@@ -25,12 +25,12 @@ struct WasmSystemWithParams {
 impl WasmSystemWithParams {
     pub fn new(guest_system: WasmGuestSystem, world: &mut World) -> Self {
         Self {
-            system_param: Self::create_system_params(guest_system.queries.clone(), world),
+            system_param: Self::create_system_param(guest_system.queries.clone(), world),
             system: guest_system,
         }
     }
 
-    fn create_system_params(
+    fn create_system_param(
         queries: wasmtime::component::__internal::Vec<types::Query>,
         world: &mut World,
     ) -> Vec<wasmtime::component::Val> {
@@ -49,14 +49,14 @@ impl WasmSystemWithParams {
             for row in data.into_iter() {
                 let mut components: Vec<BindingComponent> = vec![];
                 for component_index in &query.components {
-                    let component_a = unsafe {
+                    let component = unsafe {
                         row.get_by_id(ComponentId::new(*component_index as usize))
                             .unwrap()
                             .deref::<WasmComponent>()
                     };
                     components.push(BindingComponent {
                         id: *component_index,
-                        value: component_a.serialized_value.clone(),
+                        value: component.serialized_value.clone(),
                     });
                 }
                 query_rows.push(record_from_query_result_entry(QueryResultEntry {
@@ -72,6 +72,7 @@ impl WasmSystemWithParams {
     }
 }
 
+/// The state object that houses the functionality that is passed to WASM components.
 pub struct States<'a> {
     table: ResourceTable,
     ctx: WasiCtx,
@@ -108,18 +109,15 @@ impl WasiView for States<'_> {
 
 pub struct WasvyHostPlugin;
 
-#[derive(Resource)]
-struct WasmAssets {
-    #[allow(dead_code)]
-    pub assests: Vec<Handle<WasmComponentAsset>>,
-}
-
+/// Cross engine instatiation of WASM components is not supported.
+/// This resources is the global [`Engine`] that is used for instatiation.
+///
+/// Check the [`Engine`] docs for more information.
 #[derive(Resource, Clone, Deref)]
 pub struct WasmEngine(Engine);
 
 impl Plugin for WasvyHostPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, load_wasm_modules);
         app.add_systems(Update, (run_setup, run_systems));
 
         let engine = Engine::default();
@@ -131,14 +129,6 @@ impl Plugin for WasvyHostPlugin {
 
         app.insert_resource(WasmEngine(engine));
     }
-}
-
-fn load_wasm_modules(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let handle = asset_server.load::<WasmComponentAsset>("simple.wasm");
-
-    commands.insert_resource(WasmAssets {
-        assests: vec![handle],
-    });
 }
 
 fn run_systems(world: &mut World) {
