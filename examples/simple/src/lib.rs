@@ -36,13 +36,11 @@ impl Guest for GuestComponent {
             let first_component: FirstComponent = serde_json::from_str(&component.value).unwrap();
             println!("Component: {:?}", first_component);
         }
-
-        // fetch_my_ip();
     }
 
     fn setup() {
         let id1 = wasvy::ecs::functions::register_component("FirstComponent");
-        let id2 = wasvy::ecs::functions::register_component("SecondComponent");
+        let _id2 = wasvy::ecs::functions::register_component("SecondComponent");
 
         wasvy::ecs::functions::register_system(
             "print-first-component-system",
@@ -59,33 +57,6 @@ impl Guest for GuestComponent {
             value: serialized,
         }]);
     }
-}
-
-pub fn fetch_my_ip() {
-    // let request = ehttp::Request::get("https://icanhazip.com");
-    // ehttp::fetch(request, move |result: ehttp::Result<ehttp::Response>| {
-    //     println!("Body: {}", result.unwrap().text().unwrap());
-    // });
-    // let body = reqwest::blocking::get("https://icanhazip.com")
-    //     .unwrap()
-    //     .text()
-    //     .unwrap();
-    //
-    // body.to_string()
-    // let client = reqwest::blocking::Client::builder()
-    //     .timeout(Duration::from_secs(5))
-    //     .build()
-    //     .unwrap();
-    //
-    // let body = client
-    //     .get("https://icanhazip.com")
-    //     .send()
-    //     .unwrap()
-    //     .text()
-    //     .unwrap();
-    //
-    // // Trim trailing newline and return
-    // body.trim().to_string()
 }
 
 bindings::export!(GuestComponent with_types_in bindings);

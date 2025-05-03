@@ -1,33 +1,11 @@
-use std::{alloc::Layout, borrow::Cow};
-
 use bevy::prelude::*;
-use bevy::{
-    DefaultPlugins, MinimalPlugins,
-    app::App,
-    asset::AssetPlugin,
-    ecs::{
-        component::{Component as BevyComponent, ComponentDescriptor},
-        world::{World, WorldId},
-    },
-};
+use bevy::{DefaultPlugins, app::App, asset::AssetPlugin};
 use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::WorldInspectorPlugin};
-use host::WasmHost;
-use host_plugin::HostPlugin;
-use serde::{Deserialize, Serialize};
-use wasmtime::{
-    Engine, Store,
-    component::{Component, Func, Linker, Val},
-};
-
-use wasmtime::component::bindgen;
-use wasmtime_wasi::{self, IoView};
-
-use wasmtime::component::ResourceTable;
-use wasmtime_wasi::{WasiCtx, WasiCtxBuilder, WasiView};
+use plugin::WasvyHostPlugin;
 
 mod asset;
 mod host;
-mod host_plugin;
+mod plugin;
 mod runner;
 
 mod bindings {
@@ -46,7 +24,7 @@ fn main() -> anyhow::Result<()> {
     });
     app.add_plugins(WorldInspectorPlugin::new());
 
-    app.add_plugins(HostPlugin);
+    app.add_plugins(WasvyHostPlugin);
 
     app.run();
 
