@@ -6546,7 +6546,6 @@ version = "0.0.2"
 dependencies = [
  "anyhow",
  "bevy",
- "bevy-inspector-egui",
  "serde",
  "serde_json",
  "thiserror 2.0.12",
