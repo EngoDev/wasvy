@@ -56,7 +56,7 @@ impl Guest for GuestComponent {
             }],
         );
 
-        let serialized = serde_json::to_string(&FirstComponent { first: 17 }).unwrap();
+        let serialized = serde_json::to_string(&FirstComponent { first: 18 }).unwrap();
         wasvy::ecs::functions::spawn(&[Component {
             id: id1,
             value: serialized,

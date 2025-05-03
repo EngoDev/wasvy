@@ -5,6 +5,7 @@ use bevy::asset::AssetId;
 use bevy::ecs::component::{
     Component as BevyComponent, ComponentDescriptor as BevyComponentDescriptor, ComponentId,
 };
+use bevy::ecs::name::Name;
 use bevy::ecs::world::World;
 use serde::{Deserialize, Serialize};
 
@@ -68,11 +69,14 @@ impl crate::bindings::wasvy::ecs::functions::Host for WasmHost<'_> {
         name: wasmtime::component::__internal::String,
         query: wasmtime::component::__internal::Vec<types::Query>,
     ) {
-        self.world.spawn(WasmGuestSystem {
-            name,
-            queries: query,
-            wasm_asset_id: self.wasm_asset_id,
-        });
+        self.world.spawn((
+            Name::new("WasvySystem"),
+            WasmGuestSystem {
+                name,
+                queries: query,
+                wasm_asset_id: self.wasm_asset_id,
+            },
+        ));
     }
 
     fn get_component_id(

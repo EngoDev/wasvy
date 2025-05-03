@@ -25,11 +25,14 @@ impl Plugin for ExamplePlugin {
 ///
 /// You can build either by using `just` (Checkout the `justfile` in the root of the repo)
 fn load_wasm_modules(mut commands: Commands, asset_server: Res<AssetServer>) {
-    // Remember to modify simple.wasm to the wasm file you copied to the assets folder.
-    let handle = asset_server.load::<WasmComponentAsset>("simple.wasm");
+    let simple_handle = asset_server.load::<WasmComponentAsset>("simple.wasm");
+
+    // It takes a few seconds for the python WASM to load.
+    // If there are no errors at runtime it means it's working, just give it 10-20 seconds.
+    let python_handle = asset_server.load::<WasmComponentAsset>("python.wasm");
 
     commands.insert_resource(WasmAssets {
-        assests: vec![handle],
+        assests: vec![simple_handle, python_handle],
     });
 }
 

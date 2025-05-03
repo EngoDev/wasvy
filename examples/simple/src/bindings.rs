@@ -107,7 +107,10 @@ pub unsafe fn _export_setup_cabi<T: Guest>() {
     T::setup();
 }
 pub trait Guest {
+    /// This exported function can't be called automatically from Wasvy
+    /// because it doesn't comply to the desired signature.
     fn hello_world() -> _rt::String;
+    /// All systems must only have one argument of type `list<query-result>`
     fn print_first_component_system(params: _rt::Vec<QueryResult>) -> ();
     /// This function is called once on startup for each WASM component (Not Bevy component).
     fn setup() -> ();
@@ -175,6 +178,11 @@ pub mod wasvy {
             /// 		components: [functions:get-component-id("Name")],
             /// 		without: [functions:get-component-id("Transform")],
             /// }
+            ///
+            /// # Important
+            ///
+            /// The index for each component-id you put in `components` matters because that will be the order
+            /// of retrival from the param argument in your system.
             #[derive(Clone)]
             pub struct Query {
                 pub components: _rt::Vec<ComponentId>,

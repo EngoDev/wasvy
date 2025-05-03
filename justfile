@@ -17,7 +17,7 @@ example-fetch-deps example:
 	cd examples/{{example}} && wkg wit fetch
 
 build-host:
-	cargo run -p wasvy
+	cargo build -p wasvy
 
 build-wasvy-ecs:
 	wkg wit build --wit-dir ./wit/ecs/

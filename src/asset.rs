@@ -36,8 +36,6 @@ impl AssetLoader for WasmComponentAssetLoader {
     ) -> Result<Self::Asset, Self::Error> {
         let mut bytes = vec![];
         reader.read_to_end(&mut bytes).await.unwrap();
-        // let path = load_context.path();
-        // println!("Path: {:?}", path);
         let component = wasmtime::component::Component::from_binary(&self.engine, &bytes).unwrap();
 
         Ok(WasmComponentAsset { component })

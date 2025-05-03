@@ -1,35 +1,37 @@
 [package]
 name = "wasvy"
-edition = "2024"
+authors.workspace = true
+categories.workspace = true
+rust-version.workspace = true
+version.workspace = true
+edition.workspace = true
+description.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+readme.workspace = true
+publish = true
 
 [workspace]
-members = [ "examples/host_example","examples/simple"]
+members = ["examples/host_example","examples/simple"]
 resolver = "2"
 
 [workspace.package]
 authors = ["EngoDev"]
 categories = []
 rust-version = "1.85.0"
-version = "0.0.1"
+version = "0.0.2"
 edition = "2024"
 description = "Bevy WASM"
-license = "MIT"
-homepage = "https://github.com/EngoDev"
-repository = "https://github.com/EngoDev"
+license = "MIT OR Apache-2.0"
+homepage = "https://crates.io/crates/wasvy"
+repository = "https://github.com/EngoDev/wasvy"
 readme = "README.md"
-
-# enable a small amount of optimization in debug mode
-[profile.dev]
-opt-level = 1
-
-# enable high optimizations for dependencies (incl. Bevy), but not for our code
-[profile.dev.package."*"]
-opt-level = 3
 
 
 [dependencies]
 anyhow = "1.0.98"
-bevy = { version = "0.16.0", features = ["wayland", "dynamic_linking"]}
+bevy = { version = "0.16.0" }
 bevy-inspector-egui = "0.31.0"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
