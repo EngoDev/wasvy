@@ -200,11 +200,14 @@ Check out the examples directory for more detailed usage:
 - [ ] Mutable query data in systems.
 - [ ] Error handling improvements
 
+
 ### Phase 2: Enhanced Features
 - [ ] Hot reloading support for WASM components
 - [ ] Test suite
 - [ ] Cross-component communication
 - [ ] Performance optimizations
+- [ ] Add javascript example
+- [ ] Add go example
 
 ### Phase 3: Production Ready
 - [ ] Comprehensive documentation
