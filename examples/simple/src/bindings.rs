@@ -109,6 +109,90 @@ pub unsafe fn _export_print_first_component_system_cabi<T: Guest>(
 }
 #[doc(hidden)]
 #[allow(non_snake_case)]
+pub unsafe fn _export_two_components_in_a_query_cabi<T: Guest>(
+    arg0: *mut u8,
+    arg1: usize,
+) {
+    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+    let base13 = arg0;
+    let len13 = arg1;
+    let mut result13 = _rt::Vec::with_capacity(len13);
+    for i in 0..len13 {
+        let base = base13.add(i * (2 * ::core::mem::size_of::<*const u8>()));
+        let e13 = {
+            let l0 = *base.add(0).cast::<*mut u8>();
+            let l1 = *base.add(::core::mem::size_of::<*const u8>()).cast::<usize>();
+            let base12 = l0;
+            let len12 = l1;
+            let mut result12 = _rt::Vec::with_capacity(len12);
+            for i in 0..len12 {
+                let base = base12.add(i * (8 + 2 * ::core::mem::size_of::<*const u8>()));
+                let e12 = {
+                    let l2 = *base.add(0).cast::<*mut u8>();
+                    let l3 = *base
+                        .add(::core::mem::size_of::<*const u8>())
+                        .cast::<usize>();
+                    let base10 = l2;
+                    let len10 = l3;
+                    let mut result10 = _rt::Vec::with_capacity(len10);
+                    for i in 0..len10 {
+                        let base = base10
+                            .add(i * (4 * ::core::mem::size_of::<*const u8>()));
+                        let e10 = {
+                            let l4 = *base.add(0).cast::<*mut u8>();
+                            let l5 = *base
+                                .add(::core::mem::size_of::<*const u8>())
+                                .cast::<usize>();
+                            let len6 = l5;
+                            let bytes6 = _rt::Vec::from_raw_parts(l4.cast(), len6, len6);
+                            let l7 = *base
+                                .add(2 * ::core::mem::size_of::<*const u8>())
+                                .cast::<*mut u8>();
+                            let l8 = *base
+                                .add(3 * ::core::mem::size_of::<*const u8>())
+                                .cast::<usize>();
+                            let len9 = l8;
+                            let bytes9 = _rt::Vec::from_raw_parts(l7.cast(), len9, len9);
+                            wasvy::ecs::types::Component {
+                                path: _rt::string_lift(bytes6),
+                                value: _rt::string_lift(bytes9),
+                            }
+                        };
+                        result10.push(e10);
+                    }
+                    _rt::cabi_dealloc(
+                        base10,
+                        len10 * (4 * ::core::mem::size_of::<*const u8>()),
+                        ::core::mem::size_of::<*const u8>(),
+                    );
+                    let l11 = *base
+                        .add(2 * ::core::mem::size_of::<*const u8>())
+                        .cast::<i64>();
+                    wasvy::ecs::types::QueryResultEntry {
+                        components: result10,
+                        entity: l11 as u64,
+                    }
+                };
+                result12.push(e12);
+            }
+            _rt::cabi_dealloc(
+                base12,
+                len12 * (8 + 2 * ::core::mem::size_of::<*const u8>()),
+                8,
+            );
+            result12
+        };
+        result13.push(e13);
+    }
+    _rt::cabi_dealloc(
+        base13,
+        len13 * (2 * ::core::mem::size_of::<*const u8>()),
+        ::core::mem::size_of::<*const u8>(),
+    );
+    T::two_components_in_a_query(result13);
+}
+#[doc(hidden)]
+#[allow(non_snake_case)]
 pub unsafe fn _export_setup_cabi<T: Guest>() {
     #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
     T::setup();
@@ -119,6 +203,7 @@ pub trait Guest {
     fn hello_world() -> _rt::String;
     /// All systems must only have one argument of type `list<query-result>`
     fn print_first_component_system(params: _rt::Vec<QueryResult>) -> ();
+    fn two_components_in_a_query(params: _rt::Vec<QueryResult>) -> ();
     /// This function is called once on startup for each WASM component (Not Bevy component).
     fn setup() -> ();
 }
@@ -133,7 +218,10 @@ macro_rules! __export_world_example_cabi {
         } } #[unsafe (export_name = "print-first-component-system")] unsafe extern "C" fn
         export_print_first_component_system(arg0 : * mut u8, arg1 : usize,) { unsafe {
         $($path_to_types)*:: _export_print_first_component_system_cabi::<$ty > (arg0,
-        arg1) } } #[unsafe (export_name = "setup")] unsafe extern "C" fn export_setup() {
+        arg1) } } #[unsafe (export_name = "two-components-in-a-query")] unsafe extern "C"
+        fn export_two_components_in_a_query(arg0 : * mut u8, arg1 : usize,) { unsafe {
+        $($path_to_types)*:: _export_two_components_in_a_query_cabi::<$ty > (arg0, arg1)
+        } } #[unsafe (export_name = "setup")] unsafe extern "C" fn export_setup() {
         unsafe { $($path_to_types)*:: _export_setup_cabi::<$ty > () } } };
     };
 }
@@ -803,9 +891,9 @@ pub(crate) use __export_example_impl as export;
 )]
 #[doc(hidden)]
 #[allow(clippy::octal_escapes)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 913] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x93\x06\x01A\x02\x01\
-A\x12\x01B\x0e\x01w\x04\0\x0ccomponent-id\x03\0\0\x01w\x04\0\x06entity\x03\0\x02\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 943] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xb1\x06\x01A\x02\x01\
+A\x13\x01B\x0e\x01w\x04\0\x0ccomponent-id\x03\0\0\x01w\x04\0\x06entity\x03\0\x02\
 \x01r\x02\x04paths\x05values\x04\0\x09component\x03\0\x04\x01ps\x01r\x03\x0acomp\
 onents\x06\x04with\x06\x07without\x06\x04\0\x05query\x03\0\x07\x01p\x05\x01r\x02\
 \x0acomponents\x09\x06entity\x03\x04\0\x12query-result-entry\x03\0\x0a\x01p\x0b\x04\
@@ -822,9 +910,10 @@ ths\0\x0f\x04\0\x10get-component-id\x01\x10\x01p\x07\x01@\x01\x0acomponents\x11\
 \x01\x04\0\x05spawn\x01\x12\x01@\x02\x05entry\x0b\x0cquery-result\x09\x01\0\x04\0\
 \x1athis-function-does-nothing\x01\x13\x03\0\x13wasvy:ecs/functions\x05\x08\x01@\
 \0\0s\x04\0\x0bhello-world\x01\x09\x01p\x02\x01@\x01\x06params\x0a\x01\0\x04\0\x1c\
-print-first-component-system\x01\x0b\x01@\0\x01\0\x04\0\x05setup\x01\x0c\x04\0\x18\
-component:simple/example\x04\0\x0b\x0d\x01\0\x07example\x03\0\0\0G\x09producers\x01\
-\x0cprocessed-by\x02\x0dwit-component\x070.227.1\x10wit-bindgen-rust\x060.41.0";
+print-first-component-system\x01\x0b\x04\0\x19two-components-in-a-query\x01\x0b\x01\
+@\0\x01\0\x04\0\x05setup\x01\x0c\x04\0\x18component:simple/example\x04\0\x0b\x0d\
+\x01\0\x07example\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-compone\
+nt\x070.227.1\x10wit-bindgen-rust\x060.41.0";
 #[inline(never)]
 #[doc(hidden)]
 pub fn __link_custom_section_describing_imports() {
