@@ -1,13 +1,17 @@
 use std::collections::{HashMap, HashSet};
 
-use bevy::{
-    ecs::system::SystemState, prelude::*
-};
+use bevy::{ecs::system::SystemState, prelude::*};
 use serde::{Deserialize, Serialize};
 use wasmtime::{Engine, Store};
 
 use crate::{
-    asset::{WasmComponentAsset, WasmComponentAssetLoader}, bindings, component_registry::WasmComponentRegistry, host::WasmHost, runner::{Runner, WasmRunState}, state::States, systems::{WasmGuestSystem, WasmSystemWithParams}
+    asset::{WasmComponentAsset, WasmComponentAssetLoader},
+    bindings,
+    component_registry::WasmComponentRegistry,
+    host::WasmHost,
+    runner::{Runner, WasmRunState},
+    state::States,
+    systems::{WasmGuestSystem, WasmSystemWithParams},
 };
 
 pub struct WasvyHostPlugin;
@@ -32,7 +36,6 @@ pub struct WasmEngine(Engine);
 pub struct WasmComponent {
     pub serialized_value: String,
 }
-
 
 impl Plugin for WasvyHostPlugin {
     fn build(&self, app: &mut App) {

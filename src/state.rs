@@ -1,6 +1,4 @@
-use wasmtime_wasi::{
-    ResourceTable, WasiCtx, WasiCtxBuilder, WasiView, IoView,
-};
+use wasmtime_wasi::{IoView, ResourceTable, WasiCtx, WasiCtxBuilder, WasiView};
 
 use crate::host::WasmHost;
 

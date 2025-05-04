@@ -5,20 +5,22 @@ use std::borrow::Cow;
 use bevy::{
     asset::AssetId,
     ecs::{
-        component::{Component, ComponentDescriptor as BevyComponentDescriptor, ComponentId}, name::Name, reflect::{AppTypeRegistry, ReflectCommandExt}, system::EntityCommands, world::World
+        component::{Component, ComponentDescriptor as BevyComponentDescriptor, ComponentId},
+        name::Name,
+        reflect::{AppTypeRegistry, ReflectCommandExt},
+        system::EntityCommands,
+        world::World,
     },
     reflect::{
-        prelude::*,
-        serde::TypedReflectDeserializer,
-        PartialReflect, TypeRegistration, TypeRegistry,
+        PartialReflect, TypeRegistration, TypeRegistry, prelude::*, serde::TypedReflectDeserializer,
     },
 };
 use serde::de::DeserializeSeed;
 use serde_json::Deserializer as JsonDeserializer;
 
-use crate::{asset::WasmComponentAsset, plugin::WasmComponent, systems::WasmGuestSystem};
 use crate::bindings::wasvy::ecs::types;
 use crate::component_registry::WasmComponentRegistry;
+use crate::{asset::WasmComponentAsset, plugin::WasmComponent, systems::WasmGuestSystem};
 
 /// The implemenation of the ECS host functions that the WASM components use for interacting with
 /// Bevy.
@@ -93,10 +95,10 @@ impl crate::bindings::wasvy::ecs::functions::Host for WasmHost<'_> {
         let type_registry = self.get_type_registry();
         let type_registry = type_registry.read();
         let registry = self.get_component_registry();
-        
+
         let mut commands = self.world.commands();
         let mut entity = commands.spawn_empty();
-        
+
         for component in components {
             insert_component(&mut entity, component, &type_registry, &registry);
         }
@@ -126,7 +128,6 @@ fn create_component_descriptor(name: impl Into<Cow<'static, str>>) -> BevyCompon
 }
 
 pub fn type_id_for_path(registry: &TypeRegistry, path: &str) -> Option<TypeId> {
-    // Try to find a registration by the full, stable type path
     registry
         .get_with_type_path(path)
         .map(|registration: &TypeRegistration| registration.type_id())
@@ -145,14 +146,10 @@ fn insert_component(
     }
 }
 
-fn insert_wasm_component(
-    entity: &mut EntityCommands,
-    component_id: &ComponentId,
-    value: String,
-) {
+fn insert_wasm_component(entity: &mut EntityCommands, component_id: &ComponentId, value: String) {
     unsafe {
         entity.insert_by_id(
-            ComponentId::new(component_id.index() as usize),
+            ComponentId::new(component_id.index()),
             WasmComponent {
                 serialized_value: value,
             },
@@ -165,10 +162,8 @@ fn insert_host_component(
     component: types::Component,
     type_registry: &TypeRegistry,
 ) {
-    let type_registration = type_registry
-        .get_with_type_path(&component.path)
-        .unwrap();
-    
+    let type_registration = type_registry.get_with_type_path(&component.path).unwrap();
+
     let mut de = JsonDeserializer::from_str(&component.value);
     let reflect_deserializer = TypedReflectDeserializer::new(type_registration, type_registry);
     let output: Box<dyn PartialReflect> = reflect_deserializer.deserialize(&mut de).unwrap();
@@ -180,7 +175,7 @@ fn insert_host_component(
     let value: Box<dyn Reflect> = reflect_from_reflect
         .from_reflect(output.as_partial_reflect())
         .unwrap();
-    
+
     entity.insert_reflect(value);
 }
 

@@ -44,7 +44,6 @@ interface types {
 	/// `value` is the JSON serialized version of the actual component that is being passed between WASM and Bevy.
 	/// So for every instance of `component` make sure you deserialize it yourself to the struct that it actually is.
 	record component {
-		//id: component-id,
 		path: string,
 		value: string
 	}
