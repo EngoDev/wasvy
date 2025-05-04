@@ -1,6 +1,4 @@
 import json
-import requests
-import zlib
 
 from typing import List
 from dataclasses import dataclass, asdict
@@ -19,16 +17,17 @@ class Guest(guest.Guest):
         return "Hello World From Python!"
 
     def setup(self):
-        id1 = host_functions.register_component("PythonComponent")
+        id1 = host_functions.register_component(PythonComponent.__name__)
         host_functions.register_system(
-            "print-first-component-system", [guest.types.Query([id1], [], [])]
+            "print-first-component-system",
+            [guest.types.Query([PythonComponent.__name__], [], [])],
         )
 
         serialized_component = json.dumps(asdict(PythonComponent(kind="Boa")))
 
-        host_functions.spawn([guest.types.Component(id1, serialized_component)])
-
-        requests.get("https://google.com")
+        host_functions.spawn(
+            [guest.types.Component(PythonComponent.__name__, serialized_component)]
+        )
 
     def print_first_component_system(
         self, params: List[List[guest.types.QueryResultEntry]]

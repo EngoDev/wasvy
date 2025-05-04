@@ -16,7 +16,7 @@ class Component:
     `value` is the JSON serialized version of the actual component that is being passed between WASM and Bevy.
     So for every instance of `component` make sure you deserialize it yourself to the struct that it actually is.
     """
-    id: int
+    path: str
     value: str
 
 @dataclass
@@ -30,10 +30,15 @@ class Query:
     components: [functions:get-component-id("Name")],
     without: [functions:get-component-id("Transform")],
     }
+    
+    # Important
+    
+    The index for each component-id you put in `components` matters because that will be the order
+    of retrival from the param argument in your system.
     """
-    components: List[int]
-    with_: List[int]
-    without: List[int]
+    components: List[str]
+    with_: List[str]
+    without: List[str]
 
 @dataclass
 class QueryResultEntry:
