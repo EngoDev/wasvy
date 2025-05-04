@@ -1,8 +1,19 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+    any::TypeId,
+    collections::{HashMap, HashSet},
+};
 
 use bevy::{
-    ecs::{component::ComponentId, system::SystemState, world::FilteredEntityRef},
+    ecs::{
+        component::{ComponentId, Components},
+        system::SystemState,
+        world::FilteredEntityRef,
+    },
     prelude::*,
+    reflect::{
+        ReflectFromPtr, Type,
+        serde::{ReflectSerializer, TypedReflectSerializer},
+    },
 };
 use wasmtime::{Engine, Store};
 use wasmtime_wasi::{IoView, ResourceTable, WasiCtx, WasiCtxBuilder, WasiView};
@@ -13,6 +24,7 @@ use crate::{
         self,
         wasvy::ecs::types::{self, Component as BindingComponent, QueryResultEntry},
     },
+    component_registry::WasmComponentRegistry,
     host::{WasmComponent, WasmGuestSystem, WasmHost},
     runner::{Runner, WasmRunState},
 };
@@ -36,10 +48,41 @@ impl WasmSystemWithParams {
     ) -> Vec<wasmtime::component::Val> {
         let mut system_param: Vec<wasmtime::component::Val> = vec![];
 
+        let type_registry_guard = world.get_resource::<AppTypeRegistry>().unwrap().clone();
+
+        let type_registry = type_registry_guard.read();
+
+        let registry = world
+            .get_resource::<WasmComponentRegistry>()
+            .unwrap()
+            .clone();
+
+        let world_components: HashMap<TypeId, ComponentId> = world
+            .components()
+            .iter_registered()
+            .filter_map(|component_info| {
+                if component_info.type_id().is_some() {
+                    Some((component_info.type_id().unwrap(), component_info.id()))
+                } else {
+                    None
+                }
+            })
+            .collect();
+
         for query in &queries {
             let mut data = QueryBuilder::<FilteredEntityRef>::new(world);
-            for component_index in &query.components {
-                data.ref_id(ComponentId::new(*component_index as usize));
+            for component_type_path in &query.components {
+                // The component was made in the WASM module
+                if let Some(component_id) = registry.get(component_type_path) {
+                    data.ref_id(*component_id);
+                // The component exists in the host
+                } else {
+                    let type_id = type_registry
+                        .get_with_type_path(component_type_path)
+                        .unwrap()
+                        .type_id();
+                    data.ref_id(*world_components.get(&type_id).unwrap());
+                }
             }
 
             let mut query_state = data.build();
@@ -48,16 +91,35 @@ impl WasmSystemWithParams {
             let mut query_rows = vec![];
             for row in data.into_iter() {
                 let mut components: Vec<BindingComponent> = vec![];
-                for component_index in &query.components {
-                    let component = unsafe {
-                        row.get_by_id(ComponentId::new(*component_index as usize))
-                            .unwrap()
-                            .deref::<WasmComponent>()
-                    };
-                    components.push(BindingComponent {
-                        id: *component_index,
-                        value: component.serialized_value.clone(),
-                    });
+                for component_type_path in &query.components {
+                    // The component was made in the WASM module
+                    if let Some(component_id) = registry.get(component_type_path) {
+                        let component = unsafe {
+                            row.get_by_id(*component_id)
+                                .unwrap()
+                                .deref::<WasmComponent>()
+                        };
+                        components.push(BindingComponent {
+                            path: component_type_path.to_string(),
+                            value: component.serialized_value.clone(),
+                        });
+
+                    // The component exists in the host
+                    } else {
+                        let type_data = type_registry
+                            .get_with_type_path(component_type_path)
+                            .unwrap();
+                        let component_id = world.components().get_id(type_data.type_id()).unwrap();
+                        let reflect_from_ptr = type_data.data::<ReflectFromPtr>().unwrap();
+                        let value = unsafe {
+                            reflect_from_ptr.as_reflect(row.get_by_id(component_id).unwrap())
+                        };
+                        let serializer = TypedReflectSerializer::new(value, &type_registry);
+                        components.push(BindingComponent {
+                            path: component_type_path.to_string(),
+                            value: serde_json::to_string(&serializer).unwrap(),
+                        });
+                    }
                 }
                 query_rows.push(record_from_query_result_entry(QueryResultEntry {
                     entity: row.id().index() as u64,
@@ -118,6 +180,8 @@ pub struct WasmEngine(Engine);
 
 impl Plugin for WasvyHostPlugin {
     fn build(&self, app: &mut App) {
+        let a = Type::of::<Transform>();
+        println!("Transform blah: {:?}", a.path());
         app.add_systems(Update, (run_setup, run_systems));
 
         let engine = Engine::default();
@@ -127,7 +191,8 @@ impl Plugin for WasvyHostPlugin {
                 engine: engine.clone(),
             });
 
-        app.insert_resource(WasmEngine(engine));
+        app.insert_resource(WasmEngine(engine))
+            .init_resource::<WasmComponentRegistry>();
     }
 }
 
@@ -191,8 +256,8 @@ fn record_from_query_result_entry(data: QueryResultEntry) -> wasmtime::component
         .map(|component: BindingComponent| {
             wasmtime::component::Val::Record(vec![
                 (
-                    "id".to_string(),
-                    wasmtime::component::Val::U64(component.id),
+                    "path".to_string(),
+                    wasmtime::component::Val::String(component.path),
                 ),
                 (
                     "value".to_string(),
