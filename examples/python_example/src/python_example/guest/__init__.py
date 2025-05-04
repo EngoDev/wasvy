@@ -16,10 +16,17 @@ class Guest(Protocol):
 
     @abstractmethod
     def hello_world(self) -> str:
+        """
+        This exported function can't be called automatically from Wasvy
+        because it doesn't comply to the desired signature.
+        """
         raise NotImplementedError
 
     @abstractmethod
     def print_first_component_system(self, params: List[List[types.QueryResultEntry]]) -> None:
+        """
+        All systems must only have one argument of type `list<query-result>`
+        """
         raise NotImplementedError
 
     @abstractmethod

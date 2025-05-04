@@ -44,7 +44,7 @@ interface types {
 	/// `value` is the JSON serialized version of the actual component that is being passed between WASM and Bevy.
 	/// So for every instance of `component` make sure you deserialize it yourself to the struct that it actually is.
 	record component {
-		id: component-id,
+		path: string,
 		value: string
 	}
 
@@ -62,9 +62,9 @@ interface types {
 	/// The index for each component-id you put in `components` matters because that will be the order
 	/// of retrival from the param argument in your system.
 	record query {
-		components: list<component-id>,
-		%with: list<component-id>,
-		without: list<component-id>
+		components: list<string>,
+		%with: list<string>,
+		without: list<string>
 	}
 
 	/// This is one row for a query parameter
