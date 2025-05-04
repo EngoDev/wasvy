@@ -1,3 +1,9 @@
+<div align="center">
+
+<img src="wasvy_logo.png" alt="@wasvy logo" width="640"/>
+
+</div>
+
 # 🚧 Wasvy - Bevy WASM Integration (Alpha) 🚧
 
 [![Crates.io](https://img.shields.io/crates/v/wasvy.svg)](https://crates.io/crates/wasvy)
