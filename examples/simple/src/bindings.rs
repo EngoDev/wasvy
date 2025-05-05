@@ -251,7 +251,6 @@ pub mod wasvy {
             /// So for every instance of `component` make sure you deserialize it yourself to the struct that it actually is.
             #[derive(Clone)]
             pub struct Component {
-                /// id: component-id,
                 pub path: _rt::String,
                 pub value: _rt::String,
             }
@@ -264,6 +263,99 @@ pub mod wasvy {
                         .field("path", &self.path)
                         .field("value", &self.value)
                         .finish()
+                }
+            }
+            #[derive(Debug)]
+            #[repr(transparent)]
+            pub struct MutableComponent {
+                handle: _rt::Resource<MutableComponent>,
+            }
+            impl MutableComponent {
+                #[doc(hidden)]
+                pub unsafe fn from_handle(handle: u32) -> Self {
+                    Self {
+                        handle: unsafe { _rt::Resource::from_handle(handle) },
+                    }
+                }
+                #[doc(hidden)]
+                pub fn take_handle(&self) -> u32 {
+                    _rt::Resource::take_handle(&self.handle)
+                }
+                #[doc(hidden)]
+                pub fn handle(&self) -> u32 {
+                    _rt::Resource::handle(&self.handle)
+                }
+            }
+            unsafe impl _rt::WasmResource for MutableComponent {
+                #[inline]
+                unsafe fn drop(_handle: u32) {
+                    #[cfg(not(target_arch = "wasm32"))]
+                    unreachable!();
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        #[link(wasm_import_module = "wasvy:ecs/types")]
+                        unsafe extern "C" {
+                            #[link_name = "[resource-drop]mutable-component"]
+                            fn drop(_: u32);
+                        }
+                        unsafe { drop(_handle) };
+                    }
+                }
+            }
+            #[derive(Debug)]
+            #[repr(transparent)]
+            pub struct ImmutableComponent {
+                handle: _rt::Resource<ImmutableComponent>,
+            }
+            impl ImmutableComponent {
+                #[doc(hidden)]
+                pub unsafe fn from_handle(handle: u32) -> Self {
+                    Self {
+                        handle: unsafe { _rt::Resource::from_handle(handle) },
+                    }
+                }
+                #[doc(hidden)]
+                pub fn take_handle(&self) -> u32 {
+                    _rt::Resource::take_handle(&self.handle)
+                }
+                #[doc(hidden)]
+                pub fn handle(&self) -> u32 {
+                    _rt::Resource::handle(&self.handle)
+                }
+            }
+            unsafe impl _rt::WasmResource for ImmutableComponent {
+                #[inline]
+                unsafe fn drop(_handle: u32) {
+                    #[cfg(not(target_arch = "wasm32"))]
+                    unreachable!();
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        #[link(wasm_import_module = "wasvy:ecs/types")]
+                        unsafe extern "C" {
+                            #[link_name = "[resource-drop]immutable-component"]
+                            fn drop(_: u32);
+                        }
+                        unsafe { drop(_handle) };
+                    }
+                }
+            }
+            pub enum ComponentAccess {
+                Read(ImmutableComponent),
+                Write(MutableComponent),
+            }
+            impl ::core::fmt::Debug for ComponentAccess {
+                fn fmt(
+                    &self,
+                    f: &mut ::core::fmt::Formatter<'_>,
+                ) -> ::core::fmt::Result {
+                    match self {
+                        ComponentAccess::Read(e) => {
+                            f.debug_tuple("ComponentAccess::Read").field(e).finish()
+                        }
+                        ComponentAccess::Write(e) => {
+                            f.debug_tuple("ComponentAccess::Write").field(e).finish()
+                        }
+                    }
                 }
             }
             /// This is the translation object between bevy `Query` and WASM query that can be used for registering systems.
@@ -328,6 +420,179 @@ pub mod wasvy {
             ///
             /// query-result is equal to `first_query`
             pub type QueryResult = _rt::Vec<QueryResultEntry>;
+            impl MutableComponent {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn new(path: &str, value: &str) -> Self {
+                    unsafe {
+                        let vec0 = path;
+                        let ptr0 = vec0.as_ptr().cast::<u8>();
+                        let len0 = vec0.len();
+                        let vec1 = value;
+                        let ptr1 = vec1.as_ptr().cast::<u8>();
+                        let len1 = vec1.len();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasvy:ecs/types")]
+                        unsafe extern "C" {
+                            #[link_name = "[constructor]mutable-component"]
+                            fn wit_import2(
+                                _: *mut u8,
+                                _: usize,
+                                _: *mut u8,
+                                _: usize,
+                            ) -> i32;
+                        }
+                        #[cfg(not(target_arch = "wasm32"))]
+                        unsafe extern "C" fn wit_import2(
+                            _: *mut u8,
+                            _: usize,
+                            _: *mut u8,
+                            _: usize,
+                        ) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = unsafe {
+                            wit_import2(ptr0.cast_mut(), len0, ptr1.cast_mut(), len1)
+                        };
+                        unsafe { MutableComponent::from_handle(ret as u32) }
+                    }
+                }
+            }
+            impl MutableComponent {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn write(&self, value: &str) -> () {
+                    unsafe {
+                        let vec0 = value;
+                        let ptr0 = vec0.as_ptr().cast::<u8>();
+                        let len0 = vec0.len();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasvy:ecs/types")]
+                        unsafe extern "C" {
+                            #[link_name = "[method]mutable-component.write"]
+                            fn wit_import1(_: i32, _: *mut u8, _: usize);
+                        }
+                        #[cfg(not(target_arch = "wasm32"))]
+                        unsafe extern "C" fn wit_import1(_: i32, _: *mut u8, _: usize) {
+                            unreachable!()
+                        }
+                        unsafe {
+                            wit_import1((self).handle() as i32, ptr0.cast_mut(), len0)
+                        };
+                    }
+                }
+            }
+            impl MutableComponent {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn read(&self) -> _rt::String {
+                    unsafe {
+                        #[cfg_attr(target_pointer_width = "64", repr(align(8)))]
+                        #[cfg_attr(target_pointer_width = "32", repr(align(4)))]
+                        struct RetArea(
+                            [::core::mem::MaybeUninit<
+                                u8,
+                            >; 2 * ::core::mem::size_of::<*const u8>()],
+                        );
+                        let mut ret_area = RetArea(
+                            [::core::mem::MaybeUninit::uninit(); 2
+                                * ::core::mem::size_of::<*const u8>()],
+                        );
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasvy:ecs/types")]
+                        unsafe extern "C" {
+                            #[link_name = "[method]mutable-component.read"]
+                            fn wit_import1(_: i32, _: *mut u8);
+                        }
+                        #[cfg(not(target_arch = "wasm32"))]
+                        unsafe extern "C" fn wit_import1(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        unsafe { wit_import1((self).handle() as i32, ptr0) };
+                        let l2 = *ptr0.add(0).cast::<*mut u8>();
+                        let l3 = *ptr0
+                            .add(::core::mem::size_of::<*const u8>())
+                            .cast::<usize>();
+                        let len4 = l3;
+                        let bytes4 = _rt::Vec::from_raw_parts(l2.cast(), len4, len4);
+                        let result5 = _rt::string_lift(bytes4);
+                        result5
+                    }
+                }
+            }
+            impl ImmutableComponent {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn new(path: &str, value: &str) -> Self {
+                    unsafe {
+                        let vec0 = path;
+                        let ptr0 = vec0.as_ptr().cast::<u8>();
+                        let len0 = vec0.len();
+                        let vec1 = value;
+                        let ptr1 = vec1.as_ptr().cast::<u8>();
+                        let len1 = vec1.len();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasvy:ecs/types")]
+                        unsafe extern "C" {
+                            #[link_name = "[constructor]immutable-component"]
+                            fn wit_import2(
+                                _: *mut u8,
+                                _: usize,
+                                _: *mut u8,
+                                _: usize,
+                            ) -> i32;
+                        }
+                        #[cfg(not(target_arch = "wasm32"))]
+                        unsafe extern "C" fn wit_import2(
+                            _: *mut u8,
+                            _: usize,
+                            _: *mut u8,
+                            _: usize,
+                        ) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = unsafe {
+                            wit_import2(ptr0.cast_mut(), len0, ptr1.cast_mut(), len1)
+                        };
+                        unsafe { ImmutableComponent::from_handle(ret as u32) }
+                    }
+                }
+            }
+            impl ImmutableComponent {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn read(&self) -> _rt::String {
+                    unsafe {
+                        #[cfg_attr(target_pointer_width = "64", repr(align(8)))]
+                        #[cfg_attr(target_pointer_width = "32", repr(align(4)))]
+                        struct RetArea(
+                            [::core::mem::MaybeUninit<
+                                u8,
+                            >; 2 * ::core::mem::size_of::<*const u8>()],
+                        );
+                        let mut ret_area = RetArea(
+                            [::core::mem::MaybeUninit::uninit(); 2
+                                * ::core::mem::size_of::<*const u8>()],
+                        );
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasvy:ecs/types")]
+                        unsafe extern "C" {
+                            #[link_name = "[method]immutable-component.read"]
+                            fn wit_import1(_: i32, _: *mut u8);
+                        }
+                        #[cfg(not(target_arch = "wasm32"))]
+                        unsafe extern "C" fn wit_import1(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        unsafe { wit_import1((self).handle() as i32, ptr0) };
+                        let l2 = *ptr0.add(0).cast::<*mut u8>();
+                        let l3 = *ptr0
+                            .add(::core::mem::size_of::<*const u8>())
+                            .cast::<usize>();
+                        let len4 = l3;
+                        let bytes4 = _rt::Vec::from_raw_parts(l2.cast(), len4, len4);
+                        let result5 = _rt::string_lift(bytes4);
+                        result5
+                    }
+                }
+            }
         }
         #[allow(dead_code, async_fn_in_trait, unused_imports, clippy::all)]
         pub mod functions {
@@ -341,6 +606,7 @@ pub mod wasvy {
             pub type Component = super::super::super::wasvy::ecs::types::Component;
             pub type QueryResult = super::super::super::wasvy::ecs::types::QueryResult;
             pub type QueryResultEntry = super::super::super::wasvy::ecs::types::QueryResultEntry;
+            pub type ComponentAccess = super::super::super::wasvy::ecs::types::ComponentAccess;
             #[allow(unused_unsafe, clippy::all)]
             pub fn register_system(name: &str, queries: &[Query]) -> () {
                 unsafe {
@@ -631,6 +897,7 @@ pub mod wasvy {
             pub fn this_function_does_nothing(
                 entry: &QueryResultEntry,
                 query_result: &[super::super::super::wasvy::ecs::types::QueryResultEntry],
+                access: ComponentAccess,
             ) -> () {
                 unsafe {
                     let mut cleanup_list = _rt::Vec::new();
@@ -753,35 +1020,46 @@ pub mod wasvy {
                             cleanup_list.extend_from_slice(&[(result9, layout9)]);
                         }
                     }
+                    use super::super::super::wasvy::ecs::types::ComponentAccess as V11;
+                    let (result12_0, result12_1) = match &access {
+                        V11::Read(e) => (0i32, (e).take_handle() as i32),
+                        V11::Write(e) => (1i32, (e).take_handle() as i32),
+                    };
                     #[cfg(target_arch = "wasm32")]
                     #[link(wasm_import_module = "wasvy:ecs/functions")]
                     unsafe extern "C" {
                         #[link_name = "this-function-does-nothing"]
-                        fn wit_import11(
+                        fn wit_import13(
                             _: *mut u8,
                             _: usize,
                             _: i64,
                             _: *mut u8,
                             _: usize,
+                            _: i32,
+                            _: i32,
                         );
                     }
                     #[cfg(not(target_arch = "wasm32"))]
-                    unsafe extern "C" fn wit_import11(
+                    unsafe extern "C" fn wit_import13(
                         _: *mut u8,
                         _: usize,
                         _: i64,
                         _: *mut u8,
                         _: usize,
+                        _: i32,
+                        _: i32,
                     ) {
                         unreachable!()
                     }
                     unsafe {
-                        wit_import11(
+                        wit_import13(
                             result4,
                             len4,
                             _rt::as_i64(entity0),
                             result10,
                             len10,
+                            result12_0,
+                            result12_1,
                         )
                     };
                     if layout4.size() != 0 {
@@ -804,7 +1082,88 @@ pub mod wasvy {
 mod _rt {
     #![allow(dead_code, clippy::all)]
     pub use alloc_crate::string::String;
+    use core::fmt;
+    use core::marker;
+    use core::sync::atomic::{AtomicU32, Ordering::Relaxed};
+    /// A type which represents a component model resource, either imported or
+    /// exported into this component.
+    ///
+    /// This is a low-level wrapper which handles the lifetime of the resource
+    /// (namely this has a destructor). The `T` provided defines the component model
+    /// intrinsics that this wrapper uses.
+    ///
+    /// One of the chief purposes of this type is to provide `Deref` implementations
+    /// to access the underlying data when it is owned.
+    ///
+    /// This type is primarily used in generated code for exported and imported
+    /// resources.
+    #[repr(transparent)]
+    pub struct Resource<T: WasmResource> {
+        handle: AtomicU32,
+        _marker: marker::PhantomData<T>,
+    }
+    /// A trait which all wasm resources implement, namely providing the ability to
+    /// drop a resource.
+    ///
+    /// This generally is implemented by generated code, not user-facing code.
+    #[allow(clippy::missing_safety_doc)]
+    pub unsafe trait WasmResource {
+        /// Invokes the `[resource-drop]...` intrinsic.
+        unsafe fn drop(handle: u32);
+    }
+    impl<T: WasmResource> Resource<T> {
+        #[doc(hidden)]
+        pub unsafe fn from_handle(handle: u32) -> Self {
+            debug_assert!(handle != u32::MAX);
+            Self {
+                handle: AtomicU32::new(handle),
+                _marker: marker::PhantomData,
+            }
+        }
+        /// Takes ownership of the handle owned by `resource`.
+        ///
+        /// Note that this ideally would be `into_handle` taking `Resource<T>` by
+        /// ownership. The code generator does not enable that in all situations,
+        /// unfortunately, so this is provided instead.
+        ///
+        /// Also note that `take_handle` is in theory only ever called on values
+        /// owned by a generated function. For example a generated function might
+        /// take `Resource<T>` as an argument but then call `take_handle` on a
+        /// reference to that argument. In that sense the dynamic nature of
+        /// `take_handle` should only be exposed internally to generated code, not
+        /// to user code.
+        #[doc(hidden)]
+        pub fn take_handle(resource: &Resource<T>) -> u32 {
+            resource.handle.swap(u32::MAX, Relaxed)
+        }
+        #[doc(hidden)]
+        pub fn handle(resource: &Resource<T>) -> u32 {
+            resource.handle.load(Relaxed)
+        }
+    }
+    impl<T: WasmResource> fmt::Debug for Resource<T> {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            f.debug_struct("Resource").field("handle", &self.handle).finish()
+        }
+    }
+    impl<T: WasmResource> Drop for Resource<T> {
+        fn drop(&mut self) {
+            unsafe {
+                match self.handle.load(Relaxed) {
+                    u32::MAX => {}
+                    other => T::drop(other),
+                }
+            }
+        }
+    }
     pub use alloc_crate::vec::Vec;
+    pub unsafe fn string_lift(bytes: Vec<u8>) -> String {
+        if cfg!(debug_assertions) {
+            String::from_utf8(bytes).unwrap()
+        } else {
+            String::from_utf8_unchecked(bytes)
+        }
+    }
     pub use alloc_crate::alloc;
     pub unsafe fn invalid_enum_discriminant<T>() -> T {
         if cfg!(debug_assertions) {
@@ -847,13 +1206,6 @@ mod _rt {
         let layout = alloc::Layout::from_size_align_unchecked(size, align);
         alloc::dealloc(ptr, layout);
     }
-    pub unsafe fn string_lift(bytes: Vec<u8>) -> String {
-        if cfg!(debug_assertions) {
-            String::from_utf8(bytes).unwrap()
-        } else {
-            String::from_utf8_unchecked(bytes)
-        }
-    }
     extern crate alloc as alloc_crate;
 }
 /// Generates `#[unsafe(no_mangle)]` functions to export the specified type as
@@ -891,29 +1243,37 @@ pub(crate) use __export_example_impl as export;
 )]
 #[doc(hidden)]
 #[allow(clippy::octal_escapes)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 943] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xb1\x06\x01A\x02\x01\
-A\x13\x01B\x0e\x01w\x04\0\x0ccomponent-id\x03\0\0\x01w\x04\0\x06entity\x03\0\x02\
-\x01r\x02\x04paths\x05values\x04\0\x09component\x03\0\x04\x01ps\x01r\x03\x0acomp\
-onents\x06\x04with\x06\x07without\x06\x04\0\x05query\x03\0\x07\x01p\x05\x01r\x02\
-\x0acomponents\x09\x06entity\x03\x04\0\x12query-result-entry\x03\0\x0a\x01p\x0b\x04\
-\0\x0cquery-result\x03\0\x0c\x03\0\x0fwasvy:ecs/types\x05\0\x02\x03\0\0\x0cquery\
--result\x03\0\x0cquery-result\x03\0\x01\x02\x03\0\0\x06entity\x02\x03\0\0\x05que\
-ry\x02\x03\0\0\x0ccomponent-id\x02\x03\0\0\x09component\x02\x03\0\0\x12query-res\
-ult-entry\x01B\x19\x02\x03\x02\x01\x03\x04\0\x06entity\x03\0\0\x02\x03\x02\x01\x04\
-\x04\0\x05query\x03\0\x02\x02\x03\x02\x01\x05\x04\0\x0ccomponent-id\x03\0\x04\x02\
-\x03\x02\x01\x06\x04\0\x09component\x03\0\x06\x02\x03\x02\x01\x01\x04\0\x0cquery\
--result\x03\0\x08\x02\x03\x02\x01\x07\x04\0\x12query-result-entry\x03\0\x0a\x01p\
-\x03\x01@\x02\x04names\x07queries\x0c\x01\0\x04\0\x0fregister-system\x01\x0d\x01\
-@\x01\x04paths\0\x05\x04\0\x12register-component\x01\x0e\x01k\x05\x01@\x01\x04pa\
-ths\0\x0f\x04\0\x10get-component-id\x01\x10\x01p\x07\x01@\x01\x0acomponents\x11\0\
-\x01\x04\0\x05spawn\x01\x12\x01@\x02\x05entry\x0b\x0cquery-result\x09\x01\0\x04\0\
-\x1athis-function-does-nothing\x01\x13\x03\0\x13wasvy:ecs/functions\x05\x08\x01@\
-\0\0s\x04\0\x0bhello-world\x01\x09\x01p\x02\x01@\x01\x06params\x0a\x01\0\x04\0\x1c\
-print-first-component-system\x01\x0b\x04\0\x19two-components-in-a-query\x01\x0b\x01\
-@\0\x01\0\x04\0\x05setup\x01\x0c\x04\0\x18component:simple/example\x04\0\x0b\x0d\
-\x01\0\x07example\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-compone\
-nt\x070.227.1\x10wit-bindgen-rust\x060.41.0";
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 1355] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xcd\x09\x01A\x02\x01\
+A\x14\x01B\x20\x01w\x04\0\x0ccomponent-id\x03\0\0\x01w\x04\0\x06entity\x03\0\x02\
+\x01r\x02\x04paths\x05values\x04\0\x09component\x03\0\x04\x04\0\x11mutable-compo\
+nent\x03\x01\x04\0\x13immutable-component\x03\x01\x01i\x07\x01i\x06\x01q\x02\x04\
+read\x01\x08\0\x05write\x01\x09\0\x04\0\x10component-access\x03\0\x0a\x01ps\x01r\
+\x03\x0acomponents\x0c\x04with\x0c\x07without\x0c\x04\0\x05query\x03\0\x0d\x01p\x05\
+\x01r\x02\x0acomponents\x0f\x06entity\x03\x04\0\x12query-result-entry\x03\0\x10\x01\
+p\x11\x04\0\x0cquery-result\x03\0\x12\x01@\x02\x04paths\x05values\0\x09\x04\0\x1e\
+[constructor]mutable-component\x01\x14\x01h\x06\x01@\x02\x04self\x15\x05values\x01\
+\0\x04\0\x1f[method]mutable-component.write\x01\x16\x01@\x01\x04self\x15\0s\x04\0\
+\x1e[method]mutable-component.read\x01\x17\x01@\x02\x04paths\x05values\0\x08\x04\
+\0\x20[constructor]immutable-component\x01\x18\x01h\x07\x01@\x01\x04self\x19\0s\x04\
+\0\x20[method]immutable-component.read\x01\x1a\x03\0\x0fwasvy:ecs/types\x05\0\x02\
+\x03\0\0\x0cquery-result\x03\0\x0cquery-result\x03\0\x01\x02\x03\0\0\x06entity\x02\
+\x03\0\0\x05query\x02\x03\0\0\x0ccomponent-id\x02\x03\0\0\x09component\x02\x03\0\
+\0\x12query-result-entry\x02\x03\0\0\x10component-access\x01B\x1b\x02\x03\x02\x01\
+\x03\x04\0\x06entity\x03\0\0\x02\x03\x02\x01\x04\x04\0\x05query\x03\0\x02\x02\x03\
+\x02\x01\x05\x04\0\x0ccomponent-id\x03\0\x04\x02\x03\x02\x01\x06\x04\0\x09compon\
+ent\x03\0\x06\x02\x03\x02\x01\x01\x04\0\x0cquery-result\x03\0\x08\x02\x03\x02\x01\
+\x07\x04\0\x12query-result-entry\x03\0\x0a\x02\x03\x02\x01\x08\x04\0\x10componen\
+t-access\x03\0\x0c\x01p\x03\x01@\x02\x04names\x07queries\x0e\x01\0\x04\0\x0fregi\
+ster-system\x01\x0f\x01@\x01\x04paths\0\x05\x04\0\x12register-component\x01\x10\x01\
+k\x05\x01@\x01\x04paths\0\x11\x04\0\x10get-component-id\x01\x12\x01p\x07\x01@\x01\
+\x0acomponents\x13\0\x01\x04\0\x05spawn\x01\x14\x01@\x03\x05entry\x0b\x0cquery-r\
+esult\x09\x06access\x0d\x01\0\x04\0\x1athis-function-does-nothing\x01\x15\x03\0\x13\
+wasvy:ecs/functions\x05\x09\x01@\0\0s\x04\0\x0bhello-world\x01\x0a\x01p\x02\x01@\
+\x01\x06params\x0b\x01\0\x04\0\x1cprint-first-component-system\x01\x0c\x04\0\x19\
+two-components-in-a-query\x01\x0c\x01@\0\x01\0\x04\0\x05setup\x01\x0d\x04\0\x18c\
+omponent:simple/example\x04\0\x0b\x0d\x01\0\x07example\x03\0\0\0G\x09producers\x01\
+\x0cprocessed-by\x02\x0dwit-component\x070.227.1\x10wit-bindgen-rust\x060.41.0";
 #[inline(never)]
 #[doc(hidden)]
 pub fn __link_custom_section_describing_imports() {

@@ -15,7 +15,7 @@ world guest {
 }
 
 interface functions {
-	use types.{entity, query, component-id, component, query-result, query-result-entry};
+	use types.{entity, query, component-id, component, query-result, query-result-entry, component-access};
 	register-system: func(name: string, queries: list<query>);
 	register-component: func(path: string) -> component-id;
 	get-component-id: func(path: string) -> option<component-id>;
@@ -23,7 +23,7 @@ interface functions {
 
 	/// For some reason if the type isn't being used by a function, cargo component doesn't generate a binding for it.
 	/// so this function is only to accumulate types so they are generated.
-	this-function-does-nothing: func(entry: query-result-entry, query-result: query-result);
+	this-function-does-nothing: func(entry: query-result-entry, query-result: query-result, access: component-access);
 }
 
 interface types {
@@ -46,6 +46,22 @@ interface types {
 	record component {
 		path: string,
 		value: string
+	}
+
+	variant component-access {
+		read(immutable-component),
+		write(mutable-component)
+	}
+
+	resource mutable-component {
+		constructor(path: string, value: string);
+		write: func(value: string);
+		read: func() -> string;
+	}
+
+	resource immutable-component {
+		constructor(path: string, value: string);
+		read: func() -> string;
 	}
 
 	/// This is the translation object between bevy `Query` and WASM query that can be used for registering systems.
