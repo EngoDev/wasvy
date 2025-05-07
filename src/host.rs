@@ -18,9 +18,9 @@ use bevy::{
 use serde::de::DeserializeSeed;
 use serde_json::Deserializer as JsonDeserializer;
 
-use crate::bindings::wasvy::ecs::types;
 use crate::component_registry::WasmComponentRegistry;
 use crate::{asset::WasmComponentAsset, plugin::WasmComponent, systems::WasmGuestSystem};
+use crate::{bindings::wasvy::ecs::types, component::WasmComponents};
 
 /// The implemenation of the ECS host functions that the WASM components use for interacting with
 /// Bevy.
@@ -28,13 +28,14 @@ pub struct WasmHost<'a> {
     pub world: &'a mut World,
     /// The WASM component this host is going to be used on.
     pub wasm_asset_id: AssetId<WasmComponentAsset>,
+    pub components: WasmComponents,
 }
 
 impl crate::bindings::wasvy::ecs::functions::Host for WasmHost<'_> {
     fn register_component(
         &mut self,
         path: wasmtime::component::__internal::String,
-    ) -> types::ComponentId {
+    ) -> Result<types::ComponentId, wasmtime::Error> {
         let type_registry = self
             .world
             .get_resource::<AppTypeRegistry>()
@@ -43,7 +44,7 @@ impl crate::bindings::wasvy::ecs::functions::Host for WasmHost<'_> {
 
         // This is a known type by the hosto no need to register it.
         if let Some(id) = type_id_for_path(&type_registry.read(), &path) {
-            return self.world.components().get_id(id).expect("if the value exists in the type registry it should also exist in the world components.").index() as u64;
+            return Ok(self.world.components().get_id(id).expect("if the value exists in the type registry it should also exist in the world components.").index() as u64);
         }
 
         let id = self
@@ -57,7 +58,7 @@ impl crate::bindings::wasvy::ecs::functions::Host for WasmHost<'_> {
             .unwrap()
             .insert(path, id);
 
-        id.index() as u64
+        Ok(id.index() as u64)
     }
 
     fn register_system(
@@ -78,20 +79,20 @@ impl crate::bindings::wasvy::ecs::functions::Host for WasmHost<'_> {
     fn get_component_id(
         &mut self,
         path: wasmtime::component::__internal::String,
-    ) -> Option<types::ComponentId> {
+    ) -> Result<Option<types::ComponentId>, wasmtime::Error> {
         for component_info in self.world.components().iter_registered() {
             if *component_info.name() == path {
-                return Some(component_info.id().index() as u64);
+                return Ok(Some(component_info.id().index() as u64));
             }
         }
 
-        None
+        Ok(None)
     }
 
     fn spawn(
         &mut self,
-        components: wasmtime::component::__internal::Vec<types::Component>,
-    ) -> types::Entity {
+        components: std::vec::Vec<wasmtime::component::Resource<types::Component>>,
+    ) -> Result<types::Entity, wasmtime::Error> {
         let type_registry = self.get_type_registry();
         let type_registry = type_registry.read();
         let registry = self.get_component_registry();
@@ -100,16 +101,21 @@ impl crate::bindings::wasvy::ecs::functions::Host for WasmHost<'_> {
         let mut entity = commands.spawn_empty();
 
         for component in components {
-            insert_component(&mut entity, component, &type_registry, &registry);
+            insert_component(
+                &mut entity,
+                self.components.table.get(&component).unwrap().clone(),
+                &type_registry,
+                &registry,
+            );
         }
 
-        entity.id().index() as u64
+        Ok(entity.id().index() as u64)
     }
 
     fn this_function_does_nothing(
         &mut self,
-        _entry: crate::bindings::wasvy::ecs::types::QueryResultEntry,
-        _query_result: crate::bindings::wasvy::ecs::types::QueryResult,
+        _entry: crate::bindings::wasvy::ecs::functions::QueryResultEntry,
+        _query_result: crate::bindings::wasvy::ecs::functions::QueryResult,
     ) {
     }
 }
@@ -133,9 +139,11 @@ pub fn type_id_for_path(registry: &TypeRegistry, path: &str) -> Option<TypeId> {
         .map(|registration: &TypeRegistration| registration.type_id())
 }
 
+//TODO: Continue to fix
+// Here is an example: https://docs.wasmtime.dev/api/wasmtime/component/bindgen_examples/_4_imported_resources/index.html
 fn insert_component(
     entity: &mut EntityCommands,
-    component: types::Component,
+    component: &types::Component,
     type_registry: &TypeRegistry,
     registry: &WasmComponentRegistry,
 ) {
