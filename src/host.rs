@@ -110,6 +110,7 @@ impl crate::bindings::wasvy::ecs::functions::Host for WasmHost<'_> {
         &mut self,
         _entry: crate::bindings::wasvy::ecs::types::QueryResultEntry,
         _query_result: crate::bindings::wasvy::ecs::types::QueryResult,
+        _access: crate::bindings::wasvy::ecs::types::ComponentAccess,
     ) {
     }
 }
