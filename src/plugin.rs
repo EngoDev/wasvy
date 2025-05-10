@@ -7,11 +7,12 @@ use wasmtime::{Engine, Store};
 use crate::{
     asset::{WasmComponentAsset, WasmComponentAssetLoader},
     bindings,
+    component::WasmComponents,
     component_registry::WasmComponentRegistry,
     host::WasmHost,
     runner::{Runner, WasmRunState},
     state::States,
-    systems::{WasmGuestSystem, WasmSystemWithParams},
+    systems::{WasmGuestSystem, WasmSystemParamBuilder},
 };
 
 pub struct WasvyHostPlugin;
@@ -32,16 +33,18 @@ pub struct WasmEngine(Engine);
 /// add a new [`WasmComponent`] under that id with the `serialized_value` that is given.
 ///
 /// This approach makes it possible to register components that don't exist in Rust.
-#[derive(Component, Serialize, Deserialize, Reflect)]
+#[derive(Component)]
 pub struct WasmComponent {
-    pub serialized_value: String,
+    // pub serialized_value: String,
+    pub type_path: String,
+    pub value: Box<dyn Reflect>,
 }
 
 impl Plugin for WasvyHostPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Update, (run_setup, run_systems));
         app.register_type::<WasmGuestSystem>();
-        app.register_type::<WasmComponent>();
+        // app.register_type::<WasmComponent>();
 
         let engine = Engine::default();
 
@@ -73,28 +76,28 @@ fn run_systems(world: &mut World) {
 
     let runner = create_runner(engine.0);
 
-    let systems: Vec<WasmSystemWithParams> = wasm_systems
+    let systems: Vec<WasmSystemParamBuilder> = wasm_systems
         .into_iter()
-        .map(|system| WasmSystemWithParams::new(system, world))
+        .map(|system| WasmSystemParamBuilder::new(system, world))
         .collect();
 
-    for wasm_system in systems.iter() {
-        let wasm_host = WasmHost {
-            world,
-            wasm_asset_id: wasm_system.system.wasm_asset_id,
-        };
+    for wasm_system in systems.into_iter() {
+        let wasm_host = WasmHost::new(world, wasm_system.system.wasm_asset_id);
         let wasi_view = States::new(wasm_host);
-        let store = Store::new(&runner.engine, wasi_view);
+        let mut store = Store::new(&runner.engine, wasi_view);
         let module = assests.get(&wasm_system.system.wasm_asset_id).unwrap();
+        // let mut system_param =
+        //     WasmSystemWithParams::new(wasm_system.clone()).create_system_param(world, store);
 
         let mut results = vec![];
         runner.run_function(WasmRunState {
-            component: &module.component,
-            store,
             function_name: wasm_system.system.name.clone(),
-            params: &[wasmtime::component::Val::List(
-                wasm_system.system_param.clone(),
-            )],
+            component: &module.component,
+            params: wasm_system.build(&mut store),
+            // params: &[wasmtime::component::Val::List(
+            //     wasmtime::component::Val::from(wasm_system.build(&mut store)),
+            // )],
+            store,
             results: &mut results,
         });
     }
@@ -110,10 +113,7 @@ fn run_setup(world: &mut World, mut already_ran: Local<HashSet<AssetId<WasmCompo
     let runner = create_runner(engine.0);
 
     for (id, asset) in assets_to_setup {
-        let wasm_host = WasmHost {
-            world,
-            wasm_asset_id: id,
-        };
+        let wasm_host = WasmHost::new(world, id);
         let wasi_view = States::new(wasm_host);
         let store = Store::new(&runner.engine, wasi_view);
 
@@ -122,7 +122,7 @@ fn run_setup(world: &mut World, mut already_ran: Local<HashSet<AssetId<WasmCompo
             component: &asset.component,
             function_name: "setup".to_string(),
             store,
-            params: &[],
+            params: vec![],
             results: &mut results,
         });
     }

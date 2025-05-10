@@ -31,6 +31,17 @@ pub struct WasmHost<'a> {
     pub components: WasmComponents,
 }
 
+impl<'a> WasmHost<'a> {
+    pub fn new(world: &'a mut World, wasm_asset_id: AssetId<WasmComponentAsset>) -> WasmHost<'a> {
+        let type_registry = world.get_resource::<AppTypeRegistry>().unwrap().clone();
+        Self {
+            world,
+            wasm_asset_id,
+            components: WasmComponents::new(type_registry.0.clone()),
+        }
+    }
+}
+
 impl crate::bindings::wasvy::ecs::functions::Host for WasmHost<'_> {
     fn register_component(
         &mut self,
@@ -65,7 +76,7 @@ impl crate::bindings::wasvy::ecs::functions::Host for WasmHost<'_> {
         &mut self,
         name: wasmtime::component::__internal::String,
         query: wasmtime::component::__internal::Vec<types::Query>,
-    ) {
+    ) -> Result<(), wasmtime::Error> {
         self.world.spawn((
             Name::new("WasvySystem"),
             WasmGuestSystem {
@@ -74,6 +85,8 @@ impl crate::bindings::wasvy::ecs::functions::Host for WasmHost<'_> {
                 wasm_asset_id: self.wasm_asset_id,
             },
         ));
+
+        Ok(())
     }
 
     fn get_component_id(
@@ -101,12 +114,10 @@ impl crate::bindings::wasvy::ecs::functions::Host for WasmHost<'_> {
         let mut entity = commands.spawn_empty();
 
         for component in components {
-            insert_component(
-                &mut entity,
-                self.components.table.get(&component).unwrap().clone(),
-                &type_registry,
-                &registry,
-            );
+            // Remove this component so it isn't accessble to the guest. It's fine as the guest can
+            // query for it later.
+            let component = self.components.table.delete(component).unwrap();
+            insert_component(&mut entity, component, &type_registry, &registry);
         }
 
         Ok(entity.id().index() as u64)
@@ -116,7 +127,8 @@ impl crate::bindings::wasvy::ecs::functions::Host for WasmHost<'_> {
         &mut self,
         _entry: crate::bindings::wasvy::ecs::functions::QueryResultEntry,
         _query_result: crate::bindings::wasvy::ecs::functions::QueryResult,
-    ) {
+    ) -> Result<(), wasmtime::Error> {
+        Ok(())
     }
 }
 
@@ -143,24 +155,34 @@ pub fn type_id_for_path(registry: &TypeRegistry, path: &str) -> Option<TypeId> {
 // Here is an example: https://docs.wasmtime.dev/api/wasmtime/component/bindgen_examples/_4_imported_resources/index.html
 fn insert_component(
     entity: &mut EntityCommands,
-    component: &types::Component,
+    component: types::Component,
     type_registry: &TypeRegistry,
     registry: &WasmComponentRegistry,
 ) {
-    if let Some(component_id) = registry.get(&component.path) {
-        insert_wasm_component(entity, component_id, component.value);
+    if let Some(component_id) =
+        registry.get(&component.type_data.type_info().type_path().to_string())
+    {
+        insert_wasm_component(
+            entity,
+            component_id,
+            component.type_data.type_info().type_path().to_string(),
+            component.value,
+        );
     } else {
         insert_host_component(entity, component, type_registry);
     }
 }
 
-fn insert_wasm_component(entity: &mut EntityCommands, component_id: &ComponentId, value: String) {
+fn insert_wasm_component(
+    entity: &mut EntityCommands,
+    component_id: &ComponentId,
+    type_path: String,
+    value: Box<dyn Reflect>,
+) {
     unsafe {
         entity.insert_by_id(
             ComponentId::new(component_id.index()),
-            WasmComponent {
-                serialized_value: value,
-            },
+            WasmComponent { value, type_path },
         );
     }
 }
@@ -170,21 +192,21 @@ fn insert_host_component(
     component: types::Component,
     type_registry: &TypeRegistry,
 ) {
-    let type_registration = type_registry.get_with_type_path(&component.path).unwrap();
+    // let type_registration = type_registry.get_with_type_path(&component.path).unwrap();
+    //
+    // let mut de = JsonDeserializer::from_str(&component.value);
+    // let reflect_deserializer = TypedReflectDeserializer::new(type_registration, type_registry);
+    // let output: Box<dyn PartialReflect> = reflect_deserializer.deserialize(&mut de).unwrap();
+    //
+    // let type_id = output.get_represented_type_info().unwrap().type_id();
+    // let reflect_from_reflect = type_registry
+    //     .get_type_data::<ReflectFromReflect>(type_id)
+    //     .unwrap();
+    // let value: Box<dyn Reflect> = reflect_from_reflect
+    //     .from_reflect(output.as_partial_reflect())
+    //     .unwrap();
 
-    let mut de = JsonDeserializer::from_str(&component.value);
-    let reflect_deserializer = TypedReflectDeserializer::new(type_registration, type_registry);
-    let output: Box<dyn PartialReflect> = reflect_deserializer.deserialize(&mut de).unwrap();
-
-    let type_id = output.get_represented_type_info().unwrap().type_id();
-    let reflect_from_reflect = type_registry
-        .get_type_data::<ReflectFromReflect>(type_id)
-        .unwrap();
-    let value: Box<dyn Reflect> = reflect_from_reflect
-        .from_reflect(output.as_partial_reflect())
-        .unwrap();
-
-    entity.insert_reflect(value);
+    entity.insert_reflect(component.value);
 }
 
 impl WasmHost<'_> {

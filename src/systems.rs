@@ -5,12 +5,15 @@ use bevy::{
     prelude::*,
     reflect::{ReflectFromPtr, TypeRegistry, serde::TypedReflectSerializer},
 };
+use wasmtime::Store;
 
 use crate::{
     asset::WasmComponentAsset,
     bindings::wasvy::ecs::types::{self, Component as BindingComponent, QueryResultEntry},
+    component::WasmComponents,
     component_registry::WasmComponentRegistry,
     plugin::WasmComponent,
+    state::States,
 };
 
 #[derive(Clone, Component, Reflect)]
@@ -22,12 +25,23 @@ pub struct WasmGuestSystem {
 }
 
 /// This struct contains the Query data that will be sent to the WASM guest system.
-pub struct WasmSystemWithParams {
+pub struct WasmSystemParamBuilder {
     pub system: WasmGuestSystem,
-    pub system_param: Vec<wasmtime::component::Val>,
+    pub system_param: InternalQueriesResult,
 }
 
-impl WasmSystemWithParams {
+struct InternalQueryResultEntry {
+    entity: types::Entity,
+    components: Vec<types::Component>,
+}
+
+// struct InternalQueryResult(pub Vec<InternalQueryResultEntry>);
+
+type InternalQueryResult = Vec<InternalQueryResultEntry>;
+
+type InternalQueriesResult = Vec<InternalQueryResult>;
+
+impl WasmSystemParamBuilder {
     pub fn new(guest_system: WasmGuestSystem, world: &mut World) -> Self {
         Self {
             system_param: Self::create_system_param(guest_system.queries.clone(), world),
@@ -35,10 +49,13 @@ impl WasmSystemWithParams {
         }
     }
 
-    fn create_system_param(
+    pub fn create_system_param(
+        // &self,
         queries: wasmtime::component::__internal::Vec<types::Query>,
         world: &mut World,
-    ) -> Vec<wasmtime::component::Val> {
+        // store: Store<States>,
+        // ) -> Vec<wasmtime::component::Val> {
+    ) -> InternalQueriesResult {
         let type_registry_guard = world.get_resource::<AppTypeRegistry>().unwrap().clone();
         let type_registry = type_registry_guard.read();
         let registry = world
@@ -59,9 +76,43 @@ impl WasmSystemWithParams {
                     &type_registry,
                     &world_components,
                 );
-                wasmtime::component::Val::List(query_rows)
+
+                query_rows
+                // wasmtime::component::Val::List(query_rows)
             })
-            .collect()
+            .collect::<InternalQueriesResult>()
+    }
+
+    // pub fn build(self, store: &mut Store<States>) -> Vec<wasmtime::component::Val> {
+    pub fn build(self, store: &mut Store<States>) -> Vec<types::QueryResult> {
+        let mut blah = vec![];
+
+        for query_result in self.system_param {
+            let mut results = vec![];
+            for result in query_result {
+                let mut components: Vec<wasmtime::component::Resource<types::Component>> = vec![];
+                for component in result.components {
+                    components.push(
+                        store
+                            .data_mut()
+                            .host_ecs
+                            .components
+                            .table
+                            .push(component)
+                            .unwrap(),
+                    );
+                }
+
+                results.push(types::QueryResultEntry {
+                    entity: result.entity,
+                    components,
+                });
+            }
+
+            blah.push(results);
+        }
+
+        blah
     }
 
     fn get_world_components(world: &World) -> HashMap<TypeId, ComponentId> {
@@ -106,7 +157,8 @@ impl WasmSystemWithParams {
         registry: &WasmComponentRegistry,
         type_registry: &TypeRegistry,
         world_components: &HashMap<TypeId, ComponentId>,
-    ) -> Vec<wasmtime::component::Val> {
+        // ) -> Vec<wasmtime::component::Val> {
+    ) -> Vec<InternalQueryResultEntry> {
         query_results
             .map(|row| {
                 let components = query
@@ -123,10 +175,14 @@ impl WasmSystemWithParams {
                     })
                     .collect();
 
-                record_from_query_result_entry(QueryResultEntry {
+                InternalQueryResultEntry {
                     entity: row.id().index() as u64,
                     components,
-                })
+                }
+                // record_from_query_result_entry(QueryResultEntry {
+                //     entity: row.id().index() as u64,
+                //     components,
+                // })
             })
             .collect()
     }
@@ -138,6 +194,7 @@ impl WasmSystemWithParams {
         type_registry: &TypeRegistry,
         world_components: &HashMap<TypeId, ComponentId>,
     ) -> BindingComponent {
+        // This is a guest component
         if let Some(component_id) = registry.get(component_type_path) {
             let component = unsafe {
                 row.get_by_id(*component_id)
@@ -145,9 +202,14 @@ impl WasmSystemWithParams {
                     .deref::<WasmComponent>()
             };
             BindingComponent {
-                path: component_type_path.to_string(),
-                value: component.serialized_value.clone(),
+                type_data: type_registry
+                    .get_with_type_path(&component.type_path)
+                    .unwrap()
+                    .clone(),
+                // type_path: component_type_path.to_string(),
+                value: component.value.reflect_clone().unwrap(),
             }
+        // This is host component
         } else {
             let type_data = type_registry
                 .get_with_type_path(component_type_path)
@@ -156,42 +218,44 @@ impl WasmSystemWithParams {
             let reflect_from_ptr = type_data.data::<ReflectFromPtr>().unwrap();
             let reflected_component =
                 unsafe { reflect_from_ptr.as_reflect(row.get_by_id(*component_id).unwrap()) };
-            let serializer = TypedReflectSerializer::new(reflected_component, type_registry);
+            // let serializer = TypedReflectSerializer::new(reflected_component, type_registry);
 
             BindingComponent {
-                path: component_type_path.to_string(),
-                value: serde_json::to_string(&serializer).unwrap(),
+                type_data: type_data.clone(),
+                value: reflected_component.reflect_clone().unwrap(),
+                // value: serde_json::to_string(&serializer).unwrap(),
             }
         }
     }
 }
 
-fn record_from_query_result_entry(data: QueryResultEntry) -> wasmtime::component::Val {
-    let components: Vec<wasmtime::component::Val> = data
-        .components
-        .into_iter()
-        .map(|component: BindingComponent| {
-            wasmtime::component::Val::Record(vec![
-                (
-                    "path".to_string(),
-                    wasmtime::component::Val::String(component.path),
-                ),
-                (
-                    "value".to_string(),
-                    wasmtime::component::Val::String(component.value),
-                ),
-            ])
-        })
-        .collect();
-
-    wasmtime::component::Val::Record(vec![
-        (
-            "components".to_string(),
-            wasmtime::component::Val::List(components),
-        ),
-        (
-            "entity".to_string(),
-            wasmtime::component::Val::U64(data.entity),
-        ),
-    ])
-}
+// fn record_from_query_result_entry(
+//     data: QueryResultEntry,
+//     store: Store<States>,
+// ) -> wasmtime::component::Val {
+//     let components: Vec<wasmtime::component::Val> = data
+//         .components
+//         .into_iter()
+//         .map(|component| {
+//             // wasmtime::component::Val::Resource(
+//             //     wasm_components
+//             //         .table
+//             //         .push(component)
+//             //         .unwrap()
+//             //         .try_into_resource_any(store),
+//             // )
+//             wasmtime::component::Val::Resource(component.try_into_resource_any(store).unwrap())
+//         })
+//         .collect();
+//
+//     wasmtime::component::Val::Record(vec![
+//         (
+//             "components".to_string(),
+//             wasmtime::component::Val::List(components),
+//         ),
+//         (
+//             "entity".to_string(),
+//             wasmtime::component::Val::U64(data.entity),
+//         ),
+//     ])
+// }

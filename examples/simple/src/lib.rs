@@ -41,7 +41,7 @@ impl Guest for GuestComponent {
             let entity = row.entity;
             println!("Entity: {:?}", entity);
             let component = row.components.first().unwrap();
-            let first_component: FirstComponent = serde_json::from_str(&component.value).unwrap();
+            let first_component: FirstComponent = serde_json::from_str(&component.get()).unwrap();
             println!("Component: {:?}", first_component);
         }
     }
@@ -51,11 +51,11 @@ impl Guest for GuestComponent {
         for row in query {
             let second_component_serialized = row.components.first().unwrap();
             let second_component: SecondComponent =
-                serde_json::from_str(&second_component_serialized.value).unwrap();
+                serde_json::from_str(&second_component_serialized.get()).unwrap();
 
             let transform_component_serialized = &row.components[1];
             let transform_component: Transform =
-                serde_json::from_str(&transform_component_serialized.value).unwrap();
+                serde_json::from_str(&transform_component_serialized.get()).unwrap();
 
             println!(
                 "Second Component: {:?}, Transform: {:?}",
@@ -100,20 +100,14 @@ impl Guest for GuestComponent {
         )
         .unwrap();
 
-        wasvy::ecs::functions::spawn(&[Component {
-            path: first_component_type_path.to_string(),
-            value: first_serialized,
-        }]);
+        wasvy::ecs::functions::spawn(vec![Component::new(
+            first_component_type_path,
+            &first_serialized,
+        )]);
 
-        wasvy::ecs::functions::spawn(&[
-            Component {
-                path: second_component_type_path.to_string(),
-                value: second_serialized,
-            },
-            Component {
-                path: transform_type_path.to_string(),
-                value: transform_serialized,
-            },
+        wasvy::ecs::functions::spawn(vec![
+            Component::new(second_component_type_path, &second_serialized),
+            Component::new(transform_type_path, &transform_serialized),
         ]);
     }
 }

@@ -30,82 +30,63 @@ pub unsafe fn _export_print_first_component_system_cabi<T: Guest>(
     arg1: usize,
 ) {
     #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
-    let base13 = arg0;
-    let len13 = arg1;
-    let mut result13 = _rt::Vec::with_capacity(len13);
-    for i in 0..len13 {
-        let base = base13.add(i * (2 * ::core::mem::size_of::<*const u8>()));
-        let e13 = {
+    let base8 = arg0;
+    let len8 = arg1;
+    let mut result8 = _rt::Vec::with_capacity(len8);
+    for i in 0..len8 {
+        let base = base8.add(i * (2 * ::core::mem::size_of::<*const u8>()));
+        let e8 = {
             let l0 = *base.add(0).cast::<*mut u8>();
             let l1 = *base.add(::core::mem::size_of::<*const u8>()).cast::<usize>();
-            let base12 = l0;
-            let len12 = l1;
-            let mut result12 = _rt::Vec::with_capacity(len12);
-            for i in 0..len12 {
-                let base = base12.add(i * (8 + 2 * ::core::mem::size_of::<*const u8>()));
-                let e12 = {
+            let base7 = l0;
+            let len7 = l1;
+            let mut result7 = _rt::Vec::with_capacity(len7);
+            for i in 0..len7 {
+                let base = base7.add(i * (8 + 2 * ::core::mem::size_of::<*const u8>()));
+                let e7 = {
                     let l2 = *base.add(0).cast::<*mut u8>();
                     let l3 = *base
                         .add(::core::mem::size_of::<*const u8>())
                         .cast::<usize>();
-                    let base10 = l2;
-                    let len10 = l3;
-                    let mut result10 = _rt::Vec::with_capacity(len10);
-                    for i in 0..len10 {
-                        let base = base10
-                            .add(i * (4 * ::core::mem::size_of::<*const u8>()));
-                        let e10 = {
-                            let l4 = *base.add(0).cast::<*mut u8>();
-                            let l5 = *base
-                                .add(::core::mem::size_of::<*const u8>())
-                                .cast::<usize>();
-                            let len6 = l5;
-                            let bytes6 = _rt::Vec::from_raw_parts(l4.cast(), len6, len6);
-                            let l7 = *base
-                                .add(2 * ::core::mem::size_of::<*const u8>())
-                                .cast::<*mut u8>();
-                            let l8 = *base
-                                .add(3 * ::core::mem::size_of::<*const u8>())
-                                .cast::<usize>();
-                            let len9 = l8;
-                            let bytes9 = _rt::Vec::from_raw_parts(l7.cast(), len9, len9);
-                            wasvy::ecs::types::Component {
-                                path: _rt::string_lift(bytes6),
-                                value: _rt::string_lift(bytes9),
+                    let base5 = l2;
+                    let len5 = l3;
+                    let mut result5 = _rt::Vec::with_capacity(len5);
+                    for i in 0..len5 {
+                        let base = base5.add(i * 4);
+                        let e5 = {
+                            let l4 = *base.add(0).cast::<i32>();
+                            unsafe {
+                                wasvy::ecs::types::Component::from_handle(l4 as u32)
                             }
                         };
-                        result10.push(e10);
+                        result5.push(e5);
                     }
-                    _rt::cabi_dealloc(
-                        base10,
-                        len10 * (4 * ::core::mem::size_of::<*const u8>()),
-                        ::core::mem::size_of::<*const u8>(),
-                    );
-                    let l11 = *base
+                    _rt::cabi_dealloc(base5, len5 * 4, 4);
+                    let l6 = *base
                         .add(2 * ::core::mem::size_of::<*const u8>())
                         .cast::<i64>();
                     wasvy::ecs::types::QueryResultEntry {
-                        components: result10,
-                        entity: l11 as u64,
+                        components: result5,
+                        entity: l6 as u64,
                     }
                 };
-                result12.push(e12);
+                result7.push(e7);
             }
             _rt::cabi_dealloc(
-                base12,
-                len12 * (8 + 2 * ::core::mem::size_of::<*const u8>()),
+                base7,
+                len7 * (8 + 2 * ::core::mem::size_of::<*const u8>()),
                 8,
             );
-            result12
+            result7
         };
-        result13.push(e13);
+        result8.push(e8);
     }
     _rt::cabi_dealloc(
-        base13,
-        len13 * (2 * ::core::mem::size_of::<*const u8>()),
+        base8,
+        len8 * (2 * ::core::mem::size_of::<*const u8>()),
         ::core::mem::size_of::<*const u8>(),
     );
-    T::print_first_component_system(result13);
+    T::print_first_component_system(result8);
 }
 #[doc(hidden)]
 #[allow(non_snake_case)]
@@ -114,82 +95,63 @@ pub unsafe fn _export_two_components_in_a_query_cabi<T: Guest>(
     arg1: usize,
 ) {
     #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
-    let base13 = arg0;
-    let len13 = arg1;
-    let mut result13 = _rt::Vec::with_capacity(len13);
-    for i in 0..len13 {
-        let base = base13.add(i * (2 * ::core::mem::size_of::<*const u8>()));
-        let e13 = {
+    let base8 = arg0;
+    let len8 = arg1;
+    let mut result8 = _rt::Vec::with_capacity(len8);
+    for i in 0..len8 {
+        let base = base8.add(i * (2 * ::core::mem::size_of::<*const u8>()));
+        let e8 = {
             let l0 = *base.add(0).cast::<*mut u8>();
             let l1 = *base.add(::core::mem::size_of::<*const u8>()).cast::<usize>();
-            let base12 = l0;
-            let len12 = l1;
-            let mut result12 = _rt::Vec::with_capacity(len12);
-            for i in 0..len12 {
-                let base = base12.add(i * (8 + 2 * ::core::mem::size_of::<*const u8>()));
-                let e12 = {
+            let base7 = l0;
+            let len7 = l1;
+            let mut result7 = _rt::Vec::with_capacity(len7);
+            for i in 0..len7 {
+                let base = base7.add(i * (8 + 2 * ::core::mem::size_of::<*const u8>()));
+                let e7 = {
                     let l2 = *base.add(0).cast::<*mut u8>();
                     let l3 = *base
                         .add(::core::mem::size_of::<*const u8>())
                         .cast::<usize>();
-                    let base10 = l2;
-                    let len10 = l3;
-                    let mut result10 = _rt::Vec::with_capacity(len10);
-                    for i in 0..len10 {
-                        let base = base10
-                            .add(i * (4 * ::core::mem::size_of::<*const u8>()));
-                        let e10 = {
-                            let l4 = *base.add(0).cast::<*mut u8>();
-                            let l5 = *base
-                                .add(::core::mem::size_of::<*const u8>())
-                                .cast::<usize>();
-                            let len6 = l5;
-                            let bytes6 = _rt::Vec::from_raw_parts(l4.cast(), len6, len6);
-                            let l7 = *base
-                                .add(2 * ::core::mem::size_of::<*const u8>())
-                                .cast::<*mut u8>();
-                            let l8 = *base
-                                .add(3 * ::core::mem::size_of::<*const u8>())
-                                .cast::<usize>();
-                            let len9 = l8;
-                            let bytes9 = _rt::Vec::from_raw_parts(l7.cast(), len9, len9);
-                            wasvy::ecs::types::Component {
-                                path: _rt::string_lift(bytes6),
-                                value: _rt::string_lift(bytes9),
+                    let base5 = l2;
+                    let len5 = l3;
+                    let mut result5 = _rt::Vec::with_capacity(len5);
+                    for i in 0..len5 {
+                        let base = base5.add(i * 4);
+                        let e5 = {
+                            let l4 = *base.add(0).cast::<i32>();
+                            unsafe {
+                                wasvy::ecs::types::Component::from_handle(l4 as u32)
                             }
                         };
-                        result10.push(e10);
+                        result5.push(e5);
                     }
-                    _rt::cabi_dealloc(
-                        base10,
-                        len10 * (4 * ::core::mem::size_of::<*const u8>()),
-                        ::core::mem::size_of::<*const u8>(),
-                    );
-                    let l11 = *base
+                    _rt::cabi_dealloc(base5, len5 * 4, 4);
+                    let l6 = *base
                         .add(2 * ::core::mem::size_of::<*const u8>())
                         .cast::<i64>();
                     wasvy::ecs::types::QueryResultEntry {
-                        components: result10,
-                        entity: l11 as u64,
+                        components: result5,
+                        entity: l6 as u64,
                     }
                 };
-                result12.push(e12);
+                result7.push(e7);
             }
             _rt::cabi_dealloc(
-                base12,
-                len12 * (8 + 2 * ::core::mem::size_of::<*const u8>()),
+                base7,
+                len7 * (8 + 2 * ::core::mem::size_of::<*const u8>()),
                 8,
             );
-            result12
+            result7
         };
-        result13.push(e13);
+        result8.push(e8);
     }
     _rt::cabi_dealloc(
-        base13,
-        len13 * (2 * ::core::mem::size_of::<*const u8>()),
+        base8,
+        len8 * (2 * ::core::mem::size_of::<*const u8>()),
         ::core::mem::size_of::<*const u8>(),
     );
-    T::two_components_in_a_query(result13);
+    T::two_components_in_a_query(result8);
 }
 #[doc(hidden)]
 #[allow(non_snake_case)]
@@ -249,28 +211,12 @@ pub mod wasvy {
             ///
             /// `value` is the JSON serialized version of the actual component that is being passed between WASM and Bevy.
             /// So for every instance of `component` make sure you deserialize it yourself to the struct that it actually is.
-            #[derive(Clone)]
+            #[derive(Debug)]
+            #[repr(transparent)]
             pub struct Component {
-                pub path: _rt::String,
-                pub value: _rt::String,
+                handle: _rt::Resource<Component>,
             }
-            impl ::core::fmt::Debug for Component {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
-                    f.debug_struct("Component")
-                        .field("path", &self.path)
-                        .field("value", &self.value)
-                        .finish()
-                }
-            }
-            #[derive(Debug)]
-            #[repr(transparent)]
-            pub struct MutableComponent {
-                handle: _rt::Resource<MutableComponent>,
-            }
-            impl MutableComponent {
+            impl Component {
                 #[doc(hidden)]
                 pub unsafe fn from_handle(handle: u32) -> Self {
                     Self {
@@ -286,7 +232,7 @@ pub mod wasvy {
                     _rt::Resource::handle(&self.handle)
                 }
             }
-            unsafe impl _rt::WasmResource for MutableComponent {
+            unsafe impl _rt::WasmResource for Component {
                 #[inline]
                 unsafe fn drop(_handle: u32) {
                     #[cfg(not(target_arch = "wasm32"))]
@@ -295,82 +241,39 @@ pub mod wasvy {
                     {
                         #[link(wasm_import_module = "wasvy:ecs/types")]
                         unsafe extern "C" {
-                            #[link_name = "[resource-drop]mutable-component"]
+                            #[link_name = "[resource-drop]component"]
                             fn drop(_: u32);
                         }
                         unsafe { drop(_handle) };
                     }
                 }
             }
-            #[derive(Debug)]
-            #[repr(transparent)]
-            pub struct ImmutableComponent {
-                handle: _rt::Resource<ImmutableComponent>,
-            }
-            impl ImmutableComponent {
-                #[doc(hidden)]
-                pub unsafe fn from_handle(handle: u32) -> Self {
-                    Self {
-                        handle: unsafe { _rt::Resource::from_handle(handle) },
-                    }
-                }
-                #[doc(hidden)]
-                pub fn take_handle(&self) -> u32 {
-                    _rt::Resource::take_handle(&self.handle)
-                }
-                #[doc(hidden)]
-                pub fn handle(&self) -> u32 {
-                    _rt::Resource::handle(&self.handle)
-                }
-            }
-            unsafe impl _rt::WasmResource for ImmutableComponent {
-                #[inline]
-                unsafe fn drop(_handle: u32) {
-                    #[cfg(not(target_arch = "wasm32"))]
-                    unreachable!();
-                    #[cfg(target_arch = "wasm32")]
-                    {
-                        #[link(wasm_import_module = "wasvy:ecs/types")]
-                        unsafe extern "C" {
-                            #[link_name = "[resource-drop]immutable-component"]
-                            fn drop(_: u32);
-                        }
-                        unsafe { drop(_handle) };
-                    }
-                }
-            }
-            pub enum ComponentAccess {
-                Read(ImmutableComponent),
-                Write(MutableComponent),
-            }
-            impl ::core::fmt::Debug for ComponentAccess {
-                fn fmt(
-                    &self,
-                    f: &mut ::core::fmt::Formatter<'_>,
-                ) -> ::core::fmt::Result {
-                    match self {
-                        ComponentAccess::Read(e) => {
-                            f.debug_tuple("ComponentAccess::Read").field(e).finish()
-                        }
-                        ComponentAccess::Write(e) => {
-                            f.debug_tuple("ComponentAccess::Write").field(e).finish()
-                        }
-                    }
-                }
-            }
-            /// This is the translation object between bevy `Query` and WASM query that can be used for registering systems.
+            /// variant component-access {
+            /// 	read(immutable-component),
+            /// 	write(mutable-component)
+            /// }
+            /// resource mutable-component {
+            /// 	constructor(path: string, value: string);
+            /// 	write: func(value: string);
+            /// 	read: func() -> string;
+            /// }
+            /// resource immutable-component {
+            /// 	constructor(path: string, value: string);
+            /// 	read: func() -> string;
+            /// }
+            ///  This is the translation object between bevy `Query` and WASM query that can be used for registering systems.
             ///
-            /// For example if we had the following bevy `Query`: `Query<&Name, Without<Transform>`
-            /// It would look like this as a WASM `query` object:
-            /// `query {
+            ///  For example if we had the following bevy `Query`: `Query<&Name, Without<Transform>`
+            ///  It would look like this as a WASM `query` object:
+            ///  `query {
             /// 		components: [functions:get-component-id("Name")],
             /// 		without: [functions:get-component-id("Transform")],
-            /// }
+            ///  }
             ///
-            /// # Important
+            ///  # Important
             ///
-            /// The index for each component-id you put in `components` matters because that will be the order
-            /// of retrival from the param argument in your system.
+            ///  The index for each component-id you put in `components` matters because that will be the order
+            ///  of retrival from the param argument in your system.
             #[derive(Clone)]
             pub struct Query {
                 pub components: _rt::Vec<_rt::String>,
@@ -396,7 +299,6 @@ pub mod wasvy {
             /// fn system(first_query: Query<(&Name, &Transform)>) {}
             ///
             /// query-result-entry is equal to one entry in `first_query`
-            #[derive(Clone)]
             pub struct QueryResultEntry {
                 pub components: _rt::Vec<Component>,
                 pub entity: Entity,
@@ -420,20 +322,20 @@ pub mod wasvy {
             ///
             /// query-result is equal to `first_query`
             pub type QueryResult = _rt::Vec<QueryResultEntry>;
-            impl MutableComponent {
+            impl Component {
                 #[allow(unused_unsafe, clippy::all)]
-                pub fn new(path: &str, value: &str) -> Self {
+                pub fn new(value: &str, path: &str) -> Self {
                     unsafe {
-                        let vec0 = path;
+                        let vec0 = value;
                         let ptr0 = vec0.as_ptr().cast::<u8>();
                         let len0 = vec0.len();
-                        let vec1 = value;
+                        let vec1 = path;
                         let ptr1 = vec1.as_ptr().cast::<u8>();
                         let len1 = vec1.len();
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wasvy:ecs/types")]
                         unsafe extern "C" {
-                            #[link_name = "[constructor]mutable-component"]
+                            #[link_name = "[constructor]component"]
                             fn wit_import2(
                                 _: *mut u8,
                                 _: usize,
@@ -453,13 +355,13 @@ pub mod wasvy {
                         let ret = unsafe {
                             wit_import2(ptr0.cast_mut(), len0, ptr1.cast_mut(), len1)
                         };
-                        unsafe { MutableComponent::from_handle(ret as u32) }
+                        unsafe { Component::from_handle(ret as u32) }
                     }
                 }
             }
-            impl MutableComponent {
+            impl Component {
                 #[allow(unused_unsafe, clippy::all)]
-                pub fn write(&self, value: &str) -> () {
+                pub fn set(&self, value: &str) -> () {
                     unsafe {
                         let vec0 = value;
                         let ptr0 = vec0.as_ptr().cast::<u8>();
@@ -467,7 +369,7 @@ pub mod wasvy {
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wasvy:ecs/types")]
                         unsafe extern "C" {
-                            #[link_name = "[method]mutable-component.write"]
+                            #[link_name = "[method]component.set"]
                             fn wit_import1(_: i32, _: *mut u8, _: usize);
                         }
                         #[cfg(not(target_arch = "wasm32"))]
@@ -480,9 +382,9 @@ pub mod wasvy {
                     }
                 }
             }
-            impl MutableComponent {
+            impl Component {
                 #[allow(unused_unsafe, clippy::all)]
-                pub fn read(&self) -> _rt::String {
+                pub fn get(&self) -> _rt::String {
                     unsafe {
                         #[cfg_attr(target_pointer_width = "64", repr(align(8)))]
                         #[cfg_attr(target_pointer_width = "32", repr(align(4)))]
@@ -499,82 +401,7 @@ pub mod wasvy {
                         #[cfg(target_arch = "wasm32")]
                         #[link(wasm_import_module = "wasvy:ecs/types")]
                         unsafe extern "C" {
-                            #[link_name = "[method]mutable-component.read"]
-                            fn wit_import1(_: i32, _: *mut u8);
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        unsafe extern "C" fn wit_import1(_: i32, _: *mut u8) {
-                            unreachable!()
-                        }
-                        unsafe { wit_import1((self).handle() as i32, ptr0) };
-                        let l2 = *ptr0.add(0).cast::<*mut u8>();
-                        let l3 = *ptr0
-                            .add(::core::mem::size_of::<*const u8>())
-                            .cast::<usize>();
-                        let len4 = l3;
-                        let bytes4 = _rt::Vec::from_raw_parts(l2.cast(), len4, len4);
-                        let result5 = _rt::string_lift(bytes4);
-                        result5
-                    }
-                }
-            }
-            impl ImmutableComponent {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn new(path: &str, value: &str) -> Self {
-                    unsafe {
-                        let vec0 = path;
-                        let ptr0 = vec0.as_ptr().cast::<u8>();
-                        let len0 = vec0.len();
-                        let vec1 = value;
-                        let ptr1 = vec1.as_ptr().cast::<u8>();
-                        let len1 = vec1.len();
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wasvy:ecs/types")]
-                        unsafe extern "C" {
-                            #[link_name = "[constructor]immutable-component"]
-                            fn wit_import2(
-                                _: *mut u8,
-                                _: usize,
-                                _: *mut u8,
-                                _: usize,
-                            ) -> i32;
-                        }
-                        #[cfg(not(target_arch = "wasm32"))]
-                        unsafe extern "C" fn wit_import2(
-                            _: *mut u8,
-                            _: usize,
-                            _: *mut u8,
-                            _: usize,
-                        ) -> i32 {
-                            unreachable!()
-                        }
-                        let ret = unsafe {
-                            wit_import2(ptr0.cast_mut(), len0, ptr1.cast_mut(), len1)
-                        };
-                        unsafe { ImmutableComponent::from_handle(ret as u32) }
-                    }
-                }
-            }
-            impl ImmutableComponent {
-                #[allow(unused_unsafe, clippy::all)]
-                pub fn read(&self) -> _rt::String {
-                    unsafe {
-                        #[cfg_attr(target_pointer_width = "64", repr(align(8)))]
-                        #[cfg_attr(target_pointer_width = "32", repr(align(4)))]
-                        struct RetArea(
-                            [::core::mem::MaybeUninit<
-                                u8,
-                            >; 2 * ::core::mem::size_of::<*const u8>()],
-                        );
-                        let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 2
-                                * ::core::mem::size_of::<*const u8>()],
-                        );
-                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "wasvy:ecs/types")]
-                        unsafe extern "C" {
-                            #[link_name = "[method]immutable-component.read"]
+                            #[link_name = "[method]component.get"]
                             fn wit_import1(_: i32, _: *mut u8);
                         }
                         #[cfg(not(target_arch = "wasm32"))]
@@ -606,7 +433,6 @@ pub mod wasvy {
             pub type Component = super::super::super::wasvy::ecs::types::Component;
             pub type QueryResult = super::super::super::wasvy::ecs::types::QueryResult;
             pub type QueryResultEntry = super::super::super::wasvy::ecs::types::QueryResultEntry;
-            pub type ComponentAccess = super::super::super::wasvy::ecs::types::ComponentAccess;
             #[allow(unused_unsafe, clippy::all)]
             pub fn register_system(name: &str, queries: &[Query]) -> () {
                 unsafe {
@@ -831,62 +657,42 @@ pub mod wasvy {
                 }
             }
             #[allow(unused_unsafe, clippy::all)]
-            pub fn spawn(components: &[Component]) -> Entity {
+            pub fn spawn(components: _rt::Vec<Component>) -> Entity {
                 unsafe {
-                    let vec3 = components;
-                    let len3 = vec3.len();
-                    let layout3 = _rt::alloc::Layout::from_size_align_unchecked(
-                        vec3.len() * (4 * ::core::mem::size_of::<*const u8>()),
-                        ::core::mem::size_of::<*const u8>(),
+                    let vec0 = &components;
+                    let len0 = vec0.len();
+                    let layout0 = _rt::alloc::Layout::from_size_align_unchecked(
+                        vec0.len() * 4,
+                        4,
                     );
-                    let result3 = if layout3.size() != 0 {
-                        let ptr = _rt::alloc::alloc(layout3).cast::<u8>();
+                    let result0 = if layout0.size() != 0 {
+                        let ptr = _rt::alloc::alloc(layout0).cast::<u8>();
                         if ptr.is_null() {
-                            _rt::alloc::handle_alloc_error(layout3);
+                            _rt::alloc::handle_alloc_error(layout0);
                         }
                         ptr
                     } else {
                         ::core::ptr::null_mut()
                     };
-                    for (i, e) in vec3.into_iter().enumerate() {
-                        let base = result3
-                            .add(i * (4 * ::core::mem::size_of::<*const u8>()));
+                    for (i, e) in vec0.into_iter().enumerate() {
+                        let base = result0.add(i * 4);
                         {
-                            let super::super::super::wasvy::ecs::types::Component {
-                                path: path0,
-                                value: value0,
-                            } = e;
-                            let vec1 = path0;
-                            let ptr1 = vec1.as_ptr().cast::<u8>();
-                            let len1 = vec1.len();
-                            *base
-                                .add(::core::mem::size_of::<*const u8>())
-                                .cast::<usize>() = len1;
-                            *base.add(0).cast::<*mut u8>() = ptr1.cast_mut();
-                            let vec2 = value0;
-                            let ptr2 = vec2.as_ptr().cast::<u8>();
-                            let len2 = vec2.len();
-                            *base
-                                .add(3 * ::core::mem::size_of::<*const u8>())
-                                .cast::<usize>() = len2;
-                            *base
-                                .add(2 * ::core::mem::size_of::<*const u8>())
-                                .cast::<*mut u8>() = ptr2.cast_mut();
+                            *base.add(0).cast::<i32>() = (e).take_handle() as i32;
                         }
                     }
                     #[cfg(target_arch = "wasm32")]
                     #[link(wasm_import_module = "wasvy:ecs/functions")]
                     unsafe extern "C" {
                         #[link_name = "spawn"]
-                        fn wit_import4(_: *mut u8, _: usize) -> i64;
+                        fn wit_import1(_: *mut u8, _: usize) -> i64;
                     }
                     #[cfg(not(target_arch = "wasm32"))]
-                    unsafe extern "C" fn wit_import4(_: *mut u8, _: usize) -> i64 {
+                    unsafe extern "C" fn wit_import1(_: *mut u8, _: usize) -> i64 {
                         unreachable!()
                     }
-                    let ret = unsafe { wit_import4(result3, len3) };
-                    if layout3.size() != 0 {
-                        _rt::alloc::dealloc(result3.cast(), layout3);
+                    let ret = unsafe { wit_import1(result0, len0) };
+                    if layout0.size() != 0 {
+                        _rt::alloc::dealloc(result0.cast(), layout0);
                     }
                     ret as u64
                 }
@@ -895,21 +701,41 @@ pub mod wasvy {
             /// For some reason if the type isn't being used by a function, cargo component doesn't generate a binding for it.
             /// so this function is only to accumulate types so they are generated.
             pub fn this_function_does_nothing(
-                entry: &QueryResultEntry,
-                query_result: &[super::super::super::wasvy::ecs::types::QueryResultEntry],
-                access: ComponentAccess,
+                entry: QueryResultEntry,
+                query_result: QueryResult,
             ) -> () {
                 unsafe {
                     let mut cleanup_list = _rt::Vec::new();
                     let super::super::super::wasvy::ecs::types::QueryResultEntry {
                         components: components0,
                         entity: entity0,
-                    } = entry;
-                    let vec4 = components0;
+                    } = &entry;
+                    let vec1 = components0;
+                    let len1 = vec1.len();
+                    let layout1 = _rt::alloc::Layout::from_size_align_unchecked(
+                        vec1.len() * 4,
+                        4,
+                    );
+                    let result1 = if layout1.size() != 0 {
+                        let ptr = _rt::alloc::alloc(layout1).cast::<u8>();
+                        if ptr.is_null() {
+                            _rt::alloc::handle_alloc_error(layout1);
+                        }
+                        ptr
+                    } else {
+                        ::core::ptr::null_mut()
+                    };
+                    for (i, e) in vec1.into_iter().enumerate() {
+                        let base = result1.add(i * 4);
+                        {
+                            *base.add(0).cast::<i32>() = (e).take_handle() as i32;
+                        }
+                    }
+                    let vec4 = &query_result;
                     let len4 = vec4.len();
                     let layout4 = _rt::alloc::Layout::from_size_align_unchecked(
-                        vec4.len() * (4 * ::core::mem::size_of::<*const u8>()),
-                        ::core::mem::size_of::<*const u8>(),
+                        vec4.len() * (8 + 2 * ::core::mem::size_of::<*const u8>()),
+                        8,
                     );
                     let result4 = if layout4.size() != 0 {
                         let ptr = _rt::alloc::alloc(layout4).cast::<u8>();
@@ -922,151 +748,73 @@ pub mod wasvy {
                     };
                     for (i, e) in vec4.into_iter().enumerate() {
                         let base = result4
-                            .add(i * (4 * ::core::mem::size_of::<*const u8>()));
-                        {
-                            let super::super::super::wasvy::ecs::types::Component {
-                                path: path1,
-                                value: value1,
-                            } = e;
-                            let vec2 = path1;
-                            let ptr2 = vec2.as_ptr().cast::<u8>();
-                            let len2 = vec2.len();
-                            *base
-                                .add(::core::mem::size_of::<*const u8>())
-                                .cast::<usize>() = len2;
-                            *base.add(0).cast::<*mut u8>() = ptr2.cast_mut();
-                            let vec3 = value1;
-                            let ptr3 = vec3.as_ptr().cast::<u8>();
-                            let len3 = vec3.len();
-                            *base
-                                .add(3 * ::core::mem::size_of::<*const u8>())
-                                .cast::<usize>() = len3;
-                            *base
-                                .add(2 * ::core::mem::size_of::<*const u8>())
-                                .cast::<*mut u8>() = ptr3.cast_mut();
-                        }
-                    }
-                    let vec10 = query_result;
-                    let len10 = vec10.len();
-                    let layout10 = _rt::alloc::Layout::from_size_align_unchecked(
-                        vec10.len() * (8 + 2 * ::core::mem::size_of::<*const u8>()),
-                        8,
-                    );
-                    let result10 = if layout10.size() != 0 {
-                        let ptr = _rt::alloc::alloc(layout10).cast::<u8>();
-                        if ptr.is_null() {
-                            _rt::alloc::handle_alloc_error(layout10);
-                        }
-                        ptr
-                    } else {
-                        ::core::ptr::null_mut()
-                    };
-                    for (i, e) in vec10.into_iter().enumerate() {
-                        let base = result10
                             .add(i * (8 + 2 * ::core::mem::size_of::<*const u8>()));
                         {
                             let super::super::super::wasvy::ecs::types::QueryResultEntry {
-                                components: components5,
-                                entity: entity5,
+                                components: components2,
+                                entity: entity2,
                             } = e;
-                            let vec9 = components5;
-                            let len9 = vec9.len();
-                            let layout9 = _rt::alloc::Layout::from_size_align_unchecked(
-                                vec9.len() * (4 * ::core::mem::size_of::<*const u8>()),
-                                ::core::mem::size_of::<*const u8>(),
+                            let vec3 = components2;
+                            let len3 = vec3.len();
+                            let layout3 = _rt::alloc::Layout::from_size_align_unchecked(
+                                vec3.len() * 4,
+                                4,
                             );
-                            let result9 = if layout9.size() != 0 {
-                                let ptr = _rt::alloc::alloc(layout9).cast::<u8>();
+                            let result3 = if layout3.size() != 0 {
+                                let ptr = _rt::alloc::alloc(layout3).cast::<u8>();
                                 if ptr.is_null() {
-                                    _rt::alloc::handle_alloc_error(layout9);
+                                    _rt::alloc::handle_alloc_error(layout3);
                                 }
                                 ptr
                             } else {
                                 ::core::ptr::null_mut()
                             };
-                            for (i, e) in vec9.into_iter().enumerate() {
-                                let base = result9
-                                    .add(i * (4 * ::core::mem::size_of::<*const u8>()));
+                            for (i, e) in vec3.into_iter().enumerate() {
+                                let base = result3.add(i * 4);
                                 {
-                                    let super::super::super::wasvy::ecs::types::Component {
-                                        path: path6,
-                                        value: value6,
-                                    } = e;
-                                    let vec7 = path6;
-                                    let ptr7 = vec7.as_ptr().cast::<u8>();
-                                    let len7 = vec7.len();
-                                    *base
-                                        .add(::core::mem::size_of::<*const u8>())
-                                        .cast::<usize>() = len7;
-                                    *base.add(0).cast::<*mut u8>() = ptr7.cast_mut();
-                                    let vec8 = value6;
-                                    let ptr8 = vec8.as_ptr().cast::<u8>();
-                                    let len8 = vec8.len();
-                                    *base
-                                        .add(3 * ::core::mem::size_of::<*const u8>())
-                                        .cast::<usize>() = len8;
-                                    *base
-                                        .add(2 * ::core::mem::size_of::<*const u8>())
-                                        .cast::<*mut u8>() = ptr8.cast_mut();
+                                    *base.add(0).cast::<i32>() = (e).take_handle() as i32;
                                 }
                             }
                             *base
                                 .add(::core::mem::size_of::<*const u8>())
-                                .cast::<usize>() = len9;
-                            *base.add(0).cast::<*mut u8>() = result9;
+                                .cast::<usize>() = len3;
+                            *base.add(0).cast::<*mut u8>() = result3;
                             *base
                                 .add(2 * ::core::mem::size_of::<*const u8>())
-                                .cast::<i64>() = _rt::as_i64(entity5);
-                            cleanup_list.extend_from_slice(&[(result9, layout9)]);
+                                .cast::<i64>() = _rt::as_i64(entity2);
+                            cleanup_list.extend_from_slice(&[(result3, layout3)]);
                         }
                     }
-                    use super::super::super::wasvy::ecs::types::ComponentAccess as V11;
-                    let (result12_0, result12_1) = match &access {
-                        V11::Read(e) => (0i32, (e).take_handle() as i32),
-                        V11::Write(e) => (1i32, (e).take_handle() as i32),
-                    };
                     #[cfg(target_arch = "wasm32")]
                     #[link(wasm_import_module = "wasvy:ecs/functions")]
                     unsafe extern "C" {
                         #[link_name = "this-function-does-nothing"]
-                        fn wit_import13(
+                        fn wit_import5(
                             _: *mut u8,
                             _: usize,
                             _: i64,
                             _: *mut u8,
                             _: usize,
-                            _: i32,
-                            _: i32,
                         );
                     }
                     #[cfg(not(target_arch = "wasm32"))]
-                    unsafe extern "C" fn wit_import13(
+                    unsafe extern "C" fn wit_import5(
                         _: *mut u8,
                         _: usize,
                         _: i64,
                         _: *mut u8,
                         _: usize,
-                        _: i32,
-                        _: i32,
                     ) {
                         unreachable!()
                     }
                     unsafe {
-                        wit_import13(
-                            result4,
-                            len4,
-                            _rt::as_i64(entity0),
-                            result10,
-                            len10,
-                            result12_0,
-                            result12_1,
-                        )
+                        wit_import5(result1, len1, _rt::as_i64(entity0), result4, len4)
                     };
+                    if layout1.size() != 0 {
+                        _rt::alloc::dealloc(result1.cast(), layout1);
+                    }
                     if layout4.size() != 0 {
                         _rt::alloc::dealloc(result4.cast(), layout4);
-                    }
-                    if layout10.size() != 0 {
-                        _rt::alloc::dealloc(result10.cast(), layout10);
                     }
                     for (ptr, layout) in cleanup_list {
                         if layout.size() != 0 {
@@ -1081,7 +829,6 @@ pub mod wasvy {
 #[rustfmt::skip]
 mod _rt {
     #![allow(dead_code, clippy::all)]
-    pub use alloc_crate::string::String;
     use core::fmt;
     use core::marker;
     use core::sync::atomic::{AtomicU32, Ordering::Relaxed};
@@ -1157,6 +904,7 @@ mod _rt {
         }
     }
     pub use alloc_crate::vec::Vec;
+    pub use alloc_crate::string::String;
     pub unsafe fn string_lift(bytes: Vec<u8>) -> String {
         if cfg!(debug_assertions) {
             String::from_utf8(bytes).unwrap()
@@ -1243,36 +991,30 @@ pub(crate) use __export_example_impl as export;
 )]
 #[doc(hidden)]
 #[allow(clippy::octal_escapes)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 1355] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xcd\x09\x01A\x02\x01\
-A\x14\x01B\x20\x01w\x04\0\x0ccomponent-id\x03\0\0\x01w\x04\0\x06entity\x03\0\x02\
-\x01r\x02\x04paths\x05values\x04\0\x09component\x03\0\x04\x04\0\x11mutable-compo\
-nent\x03\x01\x04\0\x13immutable-component\x03\x01\x01i\x07\x01i\x06\x01q\x02\x04\
-read\x01\x08\0\x05write\x01\x09\0\x04\0\x10component-access\x03\0\x0a\x01ps\x01r\
-\x03\x0acomponents\x0c\x04with\x0c\x07without\x0c\x04\0\x05query\x03\0\x0d\x01p\x05\
-\x01r\x02\x0acomponents\x0f\x06entity\x03\x04\0\x12query-result-entry\x03\0\x10\x01\
-p\x11\x04\0\x0cquery-result\x03\0\x12\x01@\x02\x04paths\x05values\0\x09\x04\0\x1e\
-[constructor]mutable-component\x01\x14\x01h\x06\x01@\x02\x04self\x15\x05values\x01\
-\0\x04\0\x1f[method]mutable-component.write\x01\x16\x01@\x01\x04self\x15\0s\x04\0\
-\x1e[method]mutable-component.read\x01\x17\x01@\x02\x04paths\x05values\0\x08\x04\
-\0\x20[constructor]immutable-component\x01\x18\x01h\x07\x01@\x01\x04self\x19\0s\x04\
-\0\x20[method]immutable-component.read\x01\x1a\x03\0\x0fwasvy:ecs/types\x05\0\x02\
-\x03\0\0\x0cquery-result\x03\0\x0cquery-result\x03\0\x01\x02\x03\0\0\x06entity\x02\
-\x03\0\0\x05query\x02\x03\0\0\x0ccomponent-id\x02\x03\0\0\x09component\x02\x03\0\
-\0\x12query-result-entry\x02\x03\0\0\x10component-access\x01B\x1b\x02\x03\x02\x01\
-\x03\x04\0\x06entity\x03\0\0\x02\x03\x02\x01\x04\x04\0\x05query\x03\0\x02\x02\x03\
-\x02\x01\x05\x04\0\x0ccomponent-id\x03\0\x04\x02\x03\x02\x01\x06\x04\0\x09compon\
-ent\x03\0\x06\x02\x03\x02\x01\x01\x04\0\x0cquery-result\x03\0\x08\x02\x03\x02\x01\
-\x07\x04\0\x12query-result-entry\x03\0\x0a\x02\x03\x02\x01\x08\x04\0\x10componen\
-t-access\x03\0\x0c\x01p\x03\x01@\x02\x04names\x07queries\x0e\x01\0\x04\0\x0fregi\
-ster-system\x01\x0f\x01@\x01\x04paths\0\x05\x04\0\x12register-component\x01\x10\x01\
-k\x05\x01@\x01\x04paths\0\x11\x04\0\x10get-component-id\x01\x12\x01p\x07\x01@\x01\
-\x0acomponents\x13\0\x01\x04\0\x05spawn\x01\x14\x01@\x03\x05entry\x0b\x0cquery-r\
-esult\x09\x06access\x0d\x01\0\x04\0\x1athis-function-does-nothing\x01\x15\x03\0\x13\
-wasvy:ecs/functions\x05\x09\x01@\0\0s\x04\0\x0bhello-world\x01\x0a\x01p\x02\x01@\
-\x01\x06params\x0b\x01\0\x04\0\x1cprint-first-component-system\x01\x0c\x04\0\x19\
-two-components-in-a-query\x01\x0c\x01@\0\x01\0\x04\0\x05setup\x01\x0d\x04\0\x18c\
-omponent:simple/example\x04\0\x0b\x0d\x01\0\x07example\x03\0\0\0G\x09producers\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 1061] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xa7\x07\x01A\x02\x01\
+A\x13\x01B\x15\x01w\x04\0\x0ccomponent-id\x03\0\0\x01w\x04\0\x06entity\x03\0\x02\
+\x04\0\x09component\x03\x01\x01ps\x01r\x03\x0acomponents\x05\x04with\x05\x07with\
+out\x05\x04\0\x05query\x03\0\x06\x01i\x04\x01p\x08\x01r\x02\x0acomponents\x09\x06\
+entity\x03\x04\0\x12query-result-entry\x03\0\x0a\x01p\x0b\x04\0\x0cquery-result\x03\
+\0\x0c\x01@\x02\x05values\x04paths\0\x08\x04\0\x16[constructor]component\x01\x0e\
+\x01h\x04\x01@\x02\x04self\x0f\x05values\x01\0\x04\0\x15[method]component.set\x01\
+\x10\x01@\x01\x04self\x0f\0s\x04\0\x15[method]component.get\x01\x11\x03\0\x0fwas\
+vy:ecs/types\x05\0\x02\x03\0\0\x0cquery-result\x03\0\x0cquery-result\x03\0\x01\x02\
+\x03\0\0\x06entity\x02\x03\0\0\x05query\x02\x03\0\0\x0ccomponent-id\x02\x03\0\0\x09\
+component\x02\x03\0\0\x12query-result-entry\x01B\x1a\x02\x03\x02\x01\x03\x04\0\x06\
+entity\x03\0\0\x02\x03\x02\x01\x04\x04\0\x05query\x03\0\x02\x02\x03\x02\x01\x05\x04\
+\0\x0ccomponent-id\x03\0\x04\x02\x03\x02\x01\x06\x04\0\x09component\x03\0\x06\x02\
+\x03\x02\x01\x01\x04\0\x0cquery-result\x03\0\x08\x02\x03\x02\x01\x07\x04\0\x12qu\
+ery-result-entry\x03\0\x0a\x01p\x03\x01@\x02\x04names\x07queries\x0c\x01\0\x04\0\
+\x0fregister-system\x01\x0d\x01@\x01\x04paths\0\x05\x04\0\x12register-component\x01\
+\x0e\x01k\x05\x01@\x01\x04paths\0\x0f\x04\0\x10get-component-id\x01\x10\x01i\x07\
+\x01p\x11\x01@\x01\x0acomponents\x12\0\x01\x04\0\x05spawn\x01\x13\x01@\x02\x05en\
+try\x0b\x0cquery-result\x09\x01\0\x04\0\x1athis-function-does-nothing\x01\x14\x03\
+\0\x13wasvy:ecs/functions\x05\x08\x01@\0\0s\x04\0\x0bhello-world\x01\x09\x01p\x02\
+\x01@\x01\x06params\x0a\x01\0\x04\0\x1cprint-first-component-system\x01\x0b\x04\0\
+\x19two-components-in-a-query\x01\x0b\x01@\0\x01\0\x04\0\x05setup\x01\x0c\x04\0\x18\
+component:simple/example\x04\0\x0b\x0d\x01\0\x07example\x03\0\0\0G\x09producers\x01\
 \x0cprocessed-by\x02\x0dwit-component\x070.227.1\x10wit-bindgen-rust\x060.41.0";
 #[inline(never)]
 #[doc(hidden)]

@@ -22,9 +22,10 @@ pub struct WasmComponents {
     types: HashMap<u32, TypeRegistration>,
 }
 
+// #[derive(Debug, Clone)]
 pub struct WasmComponentResource {
-    val: Box<dyn Reflect>,
-    type_data: TypeRegistration,
+    pub(crate) value: Box<dyn Reflect>,
+    pub type_data: TypeRegistration,
 }
 
 // impl<'a, T: Reflect + IsAligned> WasmComponent<'a, T> {
@@ -72,7 +73,7 @@ impl HostComponent for WasmComponents {
         let id = self
             .table
             .push(WasmComponentResource {
-                val: value,
+                value,
                 type_data: type_registration.clone(),
             })
             .unwrap();
@@ -111,7 +112,7 @@ impl HostComponent for WasmComponents {
             .unwrap();
         // let raw_ptr = value.set(value)
 
-        self.table.get_mut(&resource).unwrap().val.set(value);
+        self.table.get_mut(&resource).unwrap().value.set(value);
         // self.ptr.set(value);
         // resource.
         Ok(())
@@ -122,7 +123,7 @@ impl HostComponent for WasmComponents {
     ) -> wasmtime::Result<wasmtime::component::__internal::String> {
         let registry = self.registry.read();
         // let registration = self.types.get(&resource.rep()).unwrap();
-        let data = &self.table.get(&resource).unwrap().val;
+        let data = &self.table.get(&resource).unwrap().value;
 
         let serializer = TypedReflectSerializer::new(data.as_reflect(), &registry);
         Ok(serde_json::to_string(&serializer).unwrap())

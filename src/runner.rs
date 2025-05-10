@@ -2,8 +2,10 @@
 
 use wasmtime::{
     Engine, Store,
-    component::{Component, Func, Linker, Val},
+    component::{Component, ComponentNamedList, ComponentType, Func, Linker, Val},
 };
+
+use crate::bindings::wasvy::ecs::types;
 
 pub struct Runner<T: wasmtime_wasi::WasiView> {
     pub engine: Engine,
@@ -15,9 +17,19 @@ pub struct WasmRunState<'a, T: wasmtime_wasi::WasiView> {
     pub component: &'a Component,
     pub store: Store<T>,
     pub function_name: String,
-    pub params: &'a [Val],
+    //TODO: Hardcoding the param for the guest systems makes it impossible to run any wasm functon
+    //using the runner.
+    pub params: Vec<types::QueryResult>,
     pub results: &'a mut [Val],
 }
+
+// #[derive(ComponentType)]
+// struct Blah {
+//     #[component]
+//     aa: Vec<types::QueryResult>
+// }
+
+// unsafe impl ComponentNamedList for Blah {}
 
 impl<T: wasmtime_wasi::WasiView> Runner<T> {
     pub fn new(engine: Engine) -> Self {
@@ -48,11 +60,19 @@ impl<T: wasmtime_wasi::WasiView> Runner<T> {
             .instantiate(&mut state.store, state.component)
             .unwrap();
 
-        let func: Func = instance
-            .get_func(&mut state.store, state.function_name.clone())
+        let func = instance
+            .get_typed_func::<(Vec<types::QueryResult>, ()), ()>(
+                &mut state.store,
+                state.function_name.clone(),
+            )
             .expect("WASM function with the given name wasn't found");
 
-        func.call(state.store, state.params, state.results)
-            .expect("failed to run the desired function");
+        let _ = func.call(state.store, (state.params, ()));
+
+        // let typed = func.typed(&state.store);
+
+        // let func.typed(state.store)
+        // func.call(state.store, state.params, state.results)
+        //     .expect("failed to run the desired function");
     }
 }

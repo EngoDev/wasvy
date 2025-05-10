@@ -29,10 +29,11 @@ fn load_wasm_modules(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     // It takes a few seconds for the python WASM to load.
     // If there are no errors at runtime it means it's working, just give it 10-20 seconds.
-    let python_handle = asset_server.load::<WasmComponentAsset>("python.wasm");
+    // let python_handle = asset_server.load::<WasmComponentAsset>("python.wasm");
 
     commands.insert_resource(WasmAssets {
-        assests: vec![simple_handle, python_handle],
+        // assests: vec![simple_handle, python_handle],
+        assests: vec![simple_handle],
     });
 }
 
