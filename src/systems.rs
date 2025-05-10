@@ -10,7 +10,7 @@ use wasmtime::Store;
 use crate::{
     asset::WasmComponentAsset,
     bindings::wasvy::ecs::types::{self, Component as BindingComponent, QueryResultEntry},
-    component::WasmComponents,
+    component::{HostWasmComponentResource, WasmComponents},
     component_registry::WasmComponentRegistry,
     plugin::WasmComponent,
     state::States,
@@ -201,14 +201,16 @@ impl WasmSystemParamBuilder {
                     .unwrap()
                     .deref::<WasmComponent>()
             };
-            BindingComponent {
-                type_data: type_registry
-                    .get_with_type_path(&component.type_path)
-                    .unwrap()
-                    .clone(),
+            BindingComponent::Guest(WasmComponent {
+                type_path: component.type_path.clone(),
+                // type_data: type_registry
+                //     .get_with_type_path(&component.type_path)
+                //     .unwrap()
+                //     .clone(),
                 // type_path: component_type_path.to_string(),
                 value: component.value.reflect_clone().unwrap(),
-            }
+                // value: component
+            })
         // This is host component
         } else {
             let type_data = type_registry
@@ -220,11 +222,11 @@ impl WasmSystemParamBuilder {
                 unsafe { reflect_from_ptr.as_reflect(row.get_by_id(*component_id).unwrap()) };
             // let serializer = TypedReflectSerializer::new(reflected_component, type_registry);
 
-            BindingComponent {
+            BindingComponent::Host(HostWasmComponentResource {
                 type_data: type_data.clone(),
                 value: reflected_component.reflect_clone().unwrap(),
                 // value: serde_json::to_string(&serializer).unwrap(),
-            }
+            })
         }
     }
 }

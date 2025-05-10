@@ -28,6 +28,7 @@ pub unsafe fn __post_return_hello_world<T: Guest>(arg0: *mut u8) {
 pub unsafe fn _export_print_first_component_system_cabi<T: Guest>(
     arg0: *mut u8,
     arg1: usize,
+    arg2: i64,
 ) {
     #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
     let base8 = arg0;
@@ -86,13 +87,14 @@ pub unsafe fn _export_print_first_component_system_cabi<T: Guest>(
         len8 * (2 * ::core::mem::size_of::<*const u8>()),
         ::core::mem::size_of::<*const u8>(),
     );
-    T::print_first_component_system(result8);
+    T::print_first_component_system(result8, arg2 as u64);
 }
 #[doc(hidden)]
 #[allow(non_snake_case)]
 pub unsafe fn _export_two_components_in_a_query_cabi<T: Guest>(
     arg0: *mut u8,
     arg1: usize,
+    arg2: i64,
 ) {
     #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
     let base8 = arg0;
@@ -151,7 +153,7 @@ pub unsafe fn _export_two_components_in_a_query_cabi<T: Guest>(
         len8 * (2 * ::core::mem::size_of::<*const u8>()),
         ::core::mem::size_of::<*const u8>(),
     );
-    T::two_components_in_a_query(result8);
+    T::two_components_in_a_query(result8, arg2 as u64);
 }
 #[doc(hidden)]
 #[allow(non_snake_case)]
@@ -164,8 +166,8 @@ pub trait Guest {
     /// because it doesn't comply to the desired signature.
     fn hello_world() -> _rt::String;
     /// All systems must only have one argument of type `list<query-result>`
-    fn print_first_component_system(params: _rt::Vec<QueryResult>) -> ();
-    fn two_components_in_a_query(params: _rt::Vec<QueryResult>) -> ();
+    fn print_first_component_system(params: _rt::Vec<QueryResult>, blah: u64) -> ();
+    fn two_components_in_a_query(params: _rt::Vec<QueryResult>, blah: u64) -> ();
     /// This function is called once on startup for each WASM component (Not Bevy component).
     fn setup() -> ();
 }
@@ -178,13 +180,14 @@ macro_rules! __export_world_example_cabi {
         "cabi_post_hello-world")] unsafe extern "C" fn _post_return_hello_world(arg0 : *
         mut u8,) { unsafe { $($path_to_types)*:: __post_return_hello_world::<$ty > (arg0)
         } } #[unsafe (export_name = "print-first-component-system")] unsafe extern "C" fn
-        export_print_first_component_system(arg0 : * mut u8, arg1 : usize,) { unsafe {
-        $($path_to_types)*:: _export_print_first_component_system_cabi::<$ty > (arg0,
-        arg1) } } #[unsafe (export_name = "two-components-in-a-query")] unsafe extern "C"
-        fn export_two_components_in_a_query(arg0 : * mut u8, arg1 : usize,) { unsafe {
-        $($path_to_types)*:: _export_two_components_in_a_query_cabi::<$ty > (arg0, arg1)
-        } } #[unsafe (export_name = "setup")] unsafe extern "C" fn export_setup() {
-        unsafe { $($path_to_types)*:: _export_setup_cabi::<$ty > () } } };
+        export_print_first_component_system(arg0 : * mut u8, arg1 : usize, arg2 : i64,) {
+        unsafe { $($path_to_types)*:: _export_print_first_component_system_cabi::<$ty >
+        (arg0, arg1, arg2) } } #[unsafe (export_name = "two-components-in-a-query")]
+        unsafe extern "C" fn export_two_components_in_a_query(arg0 : * mut u8, arg1 :
+        usize, arg2 : i64,) { unsafe { $($path_to_types)*::
+        _export_two_components_in_a_query_cabi::<$ty > (arg0, arg1, arg2) } } #[unsafe
+        (export_name = "setup")] unsafe extern "C" fn export_setup() { unsafe {
+        $($path_to_types)*:: _export_setup_cabi::<$ty > () } } };
     };
 }
 #[doc(hidden)]
@@ -991,8 +994,8 @@ pub(crate) use __export_example_impl as export;
 )]
 #[doc(hidden)]
 #[allow(clippy::octal_escapes)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 1061] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xa7\x07\x01A\x02\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 1067] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xad\x07\x01A\x02\x01\
 A\x13\x01B\x15\x01w\x04\0\x0ccomponent-id\x03\0\0\x01w\x04\0\x06entity\x03\0\x02\
 \x04\0\x09component\x03\x01\x01ps\x01r\x03\x0acomponents\x05\x04with\x05\x07with\
 out\x05\x04\0\x05query\x03\0\x06\x01i\x04\x01p\x08\x01r\x02\x0acomponents\x09\x06\
@@ -1012,10 +1015,11 @@ ery-result-entry\x03\0\x0a\x01p\x03\x01@\x02\x04names\x07queries\x0c\x01\0\x04\0
 \x01p\x11\x01@\x01\x0acomponents\x12\0\x01\x04\0\x05spawn\x01\x13\x01@\x02\x05en\
 try\x0b\x0cquery-result\x09\x01\0\x04\0\x1athis-function-does-nothing\x01\x14\x03\
 \0\x13wasvy:ecs/functions\x05\x08\x01@\0\0s\x04\0\x0bhello-world\x01\x09\x01p\x02\
-\x01@\x01\x06params\x0a\x01\0\x04\0\x1cprint-first-component-system\x01\x0b\x04\0\
-\x19two-components-in-a-query\x01\x0b\x01@\0\x01\0\x04\0\x05setup\x01\x0c\x04\0\x18\
-component:simple/example\x04\0\x0b\x0d\x01\0\x07example\x03\0\0\0G\x09producers\x01\
-\x0cprocessed-by\x02\x0dwit-component\x070.227.1\x10wit-bindgen-rust\x060.41.0";
+\x01@\x02\x06params\x0a\x04blahw\x01\0\x04\0\x1cprint-first-component-system\x01\
+\x0b\x04\0\x19two-components-in-a-query\x01\x0b\x01@\0\x01\0\x04\0\x05setup\x01\x0c\
+\x04\0\x18component:simple/example\x04\0\x0b\x0d\x01\0\x07example\x03\0\0\0G\x09\
+producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.227.1\x10wit-bindgen-rus\
+t\x060.41.0";
 #[inline(never)]
 #[doc(hidden)]
 pub fn __link_custom_section_describing_imports() {

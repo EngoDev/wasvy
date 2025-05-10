@@ -89,11 +89,11 @@ fn run_systems(world: &mut World) {
         // let mut system_param =
         //     WasmSystemWithParams::new(wasm_system.clone()).create_system_param(world, store);
 
-        let mut results = vec![];
+        let mut results = ();
         runner.run_function(WasmRunState {
             function_name: wasm_system.system.name.clone(),
             component: &module.component,
-            params: wasm_system.build(&mut store),
+            params: (wasm_system.build(&mut store), 0_u64),
             // params: &[wasmtime::component::Val::List(
             //     wasmtime::component::Val::from(wasm_system.build(&mut store)),
             // )],
@@ -117,12 +117,12 @@ fn run_setup(world: &mut World, mut already_ran: Local<HashSet<AssetId<WasmCompo
         let wasi_view = States::new(wasm_host);
         let store = Store::new(&runner.engine, wasi_view);
 
-        let mut results = vec![];
+        let mut results = ();
         runner.run_function(WasmRunState {
             component: &asset.component,
             function_name: "setup".to_string(),
             store,
-            params: vec![],
+            params: (),
             results: &mut results,
         });
     }
@@ -169,6 +169,13 @@ fn create_runner<'a>(engine: Engine) -> Runner<States<'a>> {
     runner.add_functionality(|linker| {
         bindings::wasvy::ecs::functions::add_to_linker(linker, |state: &mut States| {
             &mut state.host_ecs
+        })
+        .unwrap();
+    });
+
+    runner.add_functionality(|linker| {
+        bindings::wasvy::ecs::types::add_to_linker(linker, |state: &mut States| {
+            &mut state.host_ecs.components
         })
         .unwrap();
     });

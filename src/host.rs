@@ -18,6 +18,7 @@ use bevy::{
 use serde::de::DeserializeSeed;
 use serde_json::Deserializer as JsonDeserializer;
 
+use crate::component::{HostWasmComponentResource, WasmComponentResource};
 use crate::component_registry::WasmComponentRegistry;
 use crate::{asset::WasmComponentAsset, plugin::WasmComponent, systems::WasmGuestSystem};
 use crate::{bindings::wasvy::ecs::types, component::WasmComponents};
@@ -46,7 +47,8 @@ impl crate::bindings::wasvy::ecs::functions::Host for WasmHost<'_> {
     fn register_component(
         &mut self,
         path: wasmtime::component::__internal::String,
-    ) -> Result<types::ComponentId, wasmtime::Error> {
+        // ) -> Result<types::ComponentId, wasmtime::Error> {
+    ) -> types::ComponentId {
         let type_registry = self
             .world
             .get_resource::<AppTypeRegistry>()
@@ -55,7 +57,7 @@ impl crate::bindings::wasvy::ecs::functions::Host for WasmHost<'_> {
 
         // This is a known type by the hosto no need to register it.
         if let Some(id) = type_id_for_path(&type_registry.read(), &path) {
-            return Ok(self.world.components().get_id(id).expect("if the value exists in the type registry it should also exist in the world components.").index() as u64);
+            return self.world.components().get_id(id).expect("if the value exists in the type registry it should also exist in the world components.").index() as u64;
         }
 
         let id = self
@@ -69,14 +71,15 @@ impl crate::bindings::wasvy::ecs::functions::Host for WasmHost<'_> {
             .unwrap()
             .insert(path, id);
 
-        Ok(id.index() as u64)
+        id.index() as u64
     }
 
     fn register_system(
         &mut self,
         name: wasmtime::component::__internal::String,
         query: wasmtime::component::__internal::Vec<types::Query>,
-    ) -> Result<(), wasmtime::Error> {
+        // ) -> Result<(), wasmtime::Error> {
+    ) {
         self.world.spawn((
             Name::new("WasvySystem"),
             WasmGuestSystem {
@@ -85,27 +88,26 @@ impl crate::bindings::wasvy::ecs::functions::Host for WasmHost<'_> {
                 wasm_asset_id: self.wasm_asset_id,
             },
         ));
-
-        Ok(())
     }
 
     fn get_component_id(
         &mut self,
         path: wasmtime::component::__internal::String,
-    ) -> Result<Option<types::ComponentId>, wasmtime::Error> {
+        // ) -> Result<Option<types::ComponentId>, wasmtime::Error> {
+    ) -> Option<types::ComponentId> {
         for component_info in self.world.components().iter_registered() {
             if *component_info.name() == path {
-                return Ok(Some(component_info.id().index() as u64));
+                return Some(component_info.id().index() as u64);
             }
         }
 
-        Ok(None)
+        None
     }
 
     fn spawn(
         &mut self,
         components: std::vec::Vec<wasmtime::component::Resource<types::Component>>,
-    ) -> Result<types::Entity, wasmtime::Error> {
+    ) -> types::Entity {
         let type_registry = self.get_type_registry();
         let type_registry = type_registry.read();
         let registry = self.get_component_registry();
@@ -120,15 +122,15 @@ impl crate::bindings::wasvy::ecs::functions::Host for WasmHost<'_> {
             insert_component(&mut entity, component, &type_registry, &registry);
         }
 
-        Ok(entity.id().index() as u64)
+        entity.id().index() as u64
     }
 
     fn this_function_does_nothing(
         &mut self,
         _entry: crate::bindings::wasvy::ecs::functions::QueryResultEntry,
         _query_result: crate::bindings::wasvy::ecs::functions::QueryResult,
-    ) -> Result<(), wasmtime::Error> {
-        Ok(())
+        // ) -> Result<(), wasmtime::Error> {
+    ) {
     }
 }
 
@@ -159,18 +161,29 @@ fn insert_component(
     type_registry: &TypeRegistry,
     registry: &WasmComponentRegistry,
 ) {
-    if let Some(component_id) =
-        registry.get(&component.type_data.type_info().type_path().to_string())
-    {
-        insert_wasm_component(
-            entity,
-            component_id,
-            component.type_data.type_info().type_path().to_string(),
-            component.value,
-        );
-    } else {
-        insert_host_component(entity, component, type_registry);
-    }
+    match component {
+        WasmComponentResource::Host(component) => {
+            insert_host_component(entity, component, type_registry);
+        }
+        WasmComponentResource::Guest(component) => {
+            let component_id = registry.get(&component.type_path).unwrap();
+            unsafe {
+                entity.insert_by_id(ComponentId::new(component_id.index()), component);
+            };
+        }
+    };
+    // if let Some(component_id) =
+    //     registry.get(&component.type_data.type_info().type_path().to_string())
+    // {
+    //     insert_wasm_component(
+    //         entity,
+    //         component_id,
+    //         component.type_data.type_info().type_path().to_string(),
+    //         component.value,
+    //     );
+    // } else {
+    //     insert_host_component(entity, component, type_registry);
+    // }
 }
 
 fn insert_wasm_component(
@@ -189,7 +202,8 @@ fn insert_wasm_component(
 
 fn insert_host_component(
     entity: &mut EntityCommands,
-    component: types::Component,
+    // component: types::Component,
+    component: HostWasmComponentResource,
     type_registry: &TypeRegistry,
 ) {
     // let type_registration = type_registry.get_with_type_path(&component.path).unwrap();

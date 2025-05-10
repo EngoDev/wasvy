@@ -19,6 +19,5 @@ mod bindings {
             // "wasvy:ecs/types/component": crate::component::WasmComponents,
             "wasvy:ecs/types/component": crate::component::WasmComponentResource,
         },
-        trappable_imports: true,
     });
 }

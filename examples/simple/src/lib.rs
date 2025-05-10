@@ -35,7 +35,7 @@ impl Guest for GuestComponent {
     /// If for example the system was registered with
     /// `components: [simple::FirstComponent, simple::SecondComponent]`
     /// then params would be equal to `[Query<(&FirstComponent, &SecondComponent)>]`
-    fn print_first_component_system(params: Vec<bindings::QueryResult>) {
+    fn print_first_component_system(params: Vec<bindings::QueryResult>, blah: u64) {
         let first_component_query = params.first().unwrap();
         for row in first_component_query {
             let entity = row.entity;
@@ -46,7 +46,7 @@ impl Guest for GuestComponent {
         }
     }
 
-    fn two_components_in_a_query(params: Vec<bindings::QueryResult>) {
+    fn two_components_in_a_query(params: Vec<bindings::QueryResult>, blah: u64) {
         let query = params.first().unwrap();
         for row in query {
             let second_component_serialized = row.components.first().unwrap();
@@ -101,14 +101,16 @@ impl Guest for GuestComponent {
         .unwrap();
 
         wasvy::ecs::functions::spawn(vec![Component::new(
-            first_component_type_path,
             &first_serialized,
+            first_component_type_path,
         )]);
 
         wasvy::ecs::functions::spawn(vec![
-            Component::new(second_component_type_path, &second_serialized),
-            Component::new(transform_type_path, &transform_serialized),
+            Component::new(&second_serialized, second_component_type_path),
+            Component::new(&transform_serialized, transform_type_path),
         ]);
+
+        println!("Finished setup!");
     }
 }
 

@@ -15,7 +15,7 @@ world example {
     export hello-world: func() -> string;
 
     /// All systems must only have one argument of type `list<query-result>`
-	export print-first-component-system: func(params: list<query-result>);
+	export print-first-component-system: func(params: list<query-result>, blah: u64);
 
-	export two-components-in-a-query: func(params: list<query-result>);
+	export two-components-in-a-query: func(params: list<query-result>, blah: u64);
 }
