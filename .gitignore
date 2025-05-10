@@ -194,3 +194,6 @@ Cargo.lock
 # WASM
 *.wasm
 **/wit/deps/*
+
+# direnv
+.direnv
