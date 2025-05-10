@@ -54,8 +54,13 @@ impl Guest for GuestComponent {
                 serde_json::from_str(&second_component_serialized.get()).unwrap();
 
             let transform_component_serialized = &row.components[1];
-            let transform_component: Transform =
+            let mut transform_component: Transform =
                 serde_json::from_str(&transform_component_serialized.get()).unwrap();
+
+            transform_component.translation.x += 1.0;
+
+            transform_component_serialized
+                .set(&serde_json::to_string(&transform_component).unwrap());
 
             println!(
                 "Second Component: {:?}, Transform: {:?}",

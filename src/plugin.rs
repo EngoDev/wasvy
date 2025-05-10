@@ -90,10 +90,12 @@ fn run_systems(world: &mut World) {
         //     WasmSystemWithParams::new(wasm_system.clone()).create_system_param(world, store);
 
         let mut results = ();
+        let system_name = wasm_system.system.name.clone();
+        let params = wasm_system.build(&mut store);
         runner.run_function(WasmRunState {
-            function_name: wasm_system.system.name.clone(),
+            function_name: system_name,
             component: &module.component,
-            params: (wasm_system.build(&mut store), 0_u64),
+            params: (params, 0_u64),
             // params: &[wasmtime::component::Val::List(
             //     wasmtime::component::Val::from(wasm_system.build(&mut store)),
             // )],

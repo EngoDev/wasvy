@@ -1,7 +1,7 @@
 use std::{any::TypeId, collections::HashMap};
 
 use bevy::{
-    ecs::{component::ComponentId, world::FilteredEntityRef},
+    ecs::{component::ComponentId, system::QueryParamBuilder, world::FilteredEntityRef},
     prelude::*,
     reflect::{ReflectFromPtr, TypeRegistry, serde::TypedReflectSerializer},
 };
