@@ -251,7 +251,6 @@ pub mod wasvy {
             /// So for every instance of `component` make sure you deserialize it yourself to the struct that it actually is.
             #[derive(Clone)]
             pub struct Component {
-                /// id: component-id,
                 pub path: _rt::String,
                 pub value: _rt::String,
             }

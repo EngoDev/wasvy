@@ -2,7 +2,6 @@ use std::collections::{HashMap, HashSet};
 
 use bevy::{ecs::system::SystemState, prelude::*};
 use serde::{Deserialize, Serialize};
-use wasmtime::{Engine, Store};
 
 use crate::{
     asset::{WasmComponentAsset, WasmComponentAssetLoader},
@@ -14,14 +13,25 @@ use crate::{
     systems::{WasmGuestSystem, WasmSystemWithParams},
 };
 
-pub struct WasvyHostPlugin;
+/// This plugin adds Wasvy modding support to [`App`]
+///
+/// ```rust
+///  App::new()
+///    .add_plugins(DefaultPlugins)
+///    .add_plugins(ModloaderPlugin)
+///    // etc
+/// ```
+///
+/// Looking for next steps? See: [`Mods`](crate::mods::Mods)
+/// ```
+pub struct ModloaderPlugin;
 
 /// Cross engine instatiation of WASM components is not supported.
 /// This resources is the global [`Engine`] that is used for instatiation.
 ///
 /// Check the [`Engine`] docs for more information.
 #[derive(Resource, Clone, Deref)]
-pub struct WasmEngine(Engine);
+pub struct Engine(wasmtime::Engine);
 
 /// This component is the wrapper component for all the Bevy components that are registered in a
 /// WASM.
@@ -37,21 +47,45 @@ pub struct WasmComponent {
     pub serialized_value: String,
 }
 
-impl Plugin for WasvyHostPlugin {
+impl Plugin for ModloaderPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Update, (run_setup, run_systems));
         app.register_type::<WasmGuestSystem>();
         app.register_type::<WasmComponent>();
 
-        let engine = Engine::default();
+        let engine = wasmtime::Engine::default();
 
         app.init_asset::<WasmComponentAsset>()
             .register_asset_loader(WasmComponentAssetLoader {
                 engine: engine.clone(),
             });
 
-        app.insert_resource(WasmEngine(engine))
+        app.insert_resource(Engine(engine))
             .init_resource::<WasmComponentRegistry>();
+
+        let asset_plugins = app.get_added_plugins::<AssetPlugin>();
+        let asset_plugin = asset_plugins
+            .get(0)
+            .expect("ModloaderPlugin requires AssetPlugin to be loaded.");
+
+        // Warn a user running the App in debug; they probably want hot-reloading
+        if cfg!(debug_assertions) {
+            let user_overrode_watch_setting = asset_plugin.watch_for_changes_override.is_some();
+            let resolved_watch_setting = app
+                .world()
+                .get_resource::<AssetServer>()
+                .unwrap()
+                .watching_for_changes();
+
+            if !user_overrode_watch_setting && !resolved_watch_setting {
+                warn!(
+                    "Enable Bevy's watch feature to enable hot-reloading Wasvy mods.\
+                You can do this by running the command `cargo run --features bevy/file_watcher`.\
+                In order to hide this message, set the `watch_for_changes_override` to\
+                `Some(true)` or `Some(false)` in the AssetPlugin."
+                );
+            }
+        }
     }
 }
 
@@ -69,7 +103,7 @@ fn run_systems(world: &mut World) {
         .map(|(id, asset)| (id, asset.clone()))
         .collect();
 
-    let engine = world.get_resource::<WasmEngine>().unwrap().clone();
+    let engine = world.get_resource::<Engine>().unwrap().clone();
 
     let runner = create_runner(engine.0);
 
@@ -84,7 +118,7 @@ fn run_systems(world: &mut World) {
             wasm_asset_id: wasm_system.system.wasm_asset_id,
         };
         let wasi_view = States::new(wasm_host);
-        let store = Store::new(&runner.engine, wasi_view);
+        let store = wasmtime::Store::new(&runner.engine, wasi_view);
         let module = assests.get(&wasm_system.system.wasm_asset_id).unwrap();
 
         let mut results = vec![];
@@ -106,7 +140,7 @@ fn run_setup(world: &mut World, mut already_ran: Local<HashSet<AssetId<WasmCompo
         return;
     }
 
-    let engine = world.get_resource::<WasmEngine>().unwrap().clone();
+    let engine = world.get_resource::<Engine>().unwrap().clone();
     let runner = create_runner(engine.0);
 
     for (id, asset) in assets_to_setup {
@@ -115,7 +149,7 @@ fn run_setup(world: &mut World, mut already_ran: Local<HashSet<AssetId<WasmCompo
             wasm_asset_id: id,
         };
         let wasi_view = States::new(wasm_host);
-        let store = Store::new(&runner.engine, wasi_view);
+        let store = wasmtime::Store::new(&runner.engine, wasi_view);
 
         let mut results = vec![];
         runner.run_function(WasmRunState {
@@ -163,7 +197,7 @@ fn get_assets_to_setup(
     assets_to_setup
 }
 
-fn create_runner<'a>(engine: Engine) -> Runner<States<'a>> {
+fn create_runner<'a>(engine: wasmtime::Engine) -> Runner<States<'a>> {
     let mut runner = Runner::new(engine);
     runner.add_wasi_sync();
     runner.add_functionality(|linker| {

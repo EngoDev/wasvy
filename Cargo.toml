@@ -13,7 +13,7 @@ readme.workspace = true
 publish = true
 
 [workspace]
-members = ["examples/host_example","examples/simple"]
+members = ["examples/host_example", "examples/simple"]
 resolver = "2"
 
 [workspace.package]
