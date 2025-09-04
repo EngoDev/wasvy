@@ -49,43 +49,24 @@ cargo add wasvy
 
 ```rust
 use bevy::prelude::*;
+use bevy::{DefaultPlugins, app::App};
+
+// Get started by importing the prelude
 use wasvy::prelude::*;
 
-/// Bevy drops assets if there are no active handles
-/// so this resource exists to keep the handles alive.
-#[derive(Resource)]
-struct WasmAssets {
-    #[allow(dead_code)]
-    pub assests: Vec<Handle<WasmComponentAsset>>,
-}
-
-struct ExamplePlugin;
-
-impl Plugin for ExamplePlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(Startup, load_wasm_modules);
-    }
-}
-
-fn load_wasm_modules(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let handle = asset_server.load::<WasmComponentAsset>("path/to/your/component.wasm");
-
-    commands.insert_resource(WasmAssets {
-        assests: vec![handle],
-    });
-}
-
 fn main() {
-    let mut app = App::new();
+    App::new()
+        .add_plugins(DefaultPlugins)
+        // Adding the [`WasvyHostPlugin`] is all you need ;)
+        .add_plugins(ModloaderPlugin)
+        .add_systems(Startup, startup)
+        .run();
+}
 
-    app.add_plugins(DefaultPlugins);
-
-    // Adding the [`WasvyHostPlugin`] is all you need ;)
-    app.add_plugins(WasvyHostPlugin);
-
-    app.add_plugins(ExamplePlugin);
-
-    app.run();
+/// Access the modloader's api through the Mods interface
+fn startup(mut mods: Mods) {
+    // Load one (or several) mods at once from the asset directory!
+    mods.load("path/to/your/component.wasm");
 }
 ```
 
@@ -96,11 +77,13 @@ To create a WASM component that works with Wasvy, you'll need to use the WebAsse
 ### Prerequisites
 
 1. Install `cargo-component`:
+
 ```bash
 cargo install cargo-component
 ```
 
 2. Install `wkg` (WebAssembly Kit Generator):
+
 ```bash
 cargo install wkg
 ```
@@ -108,19 +91,21 @@ cargo install wkg
 ### Creating a New WASM Component
 
 1. Create a new component project:
+
 ```bash
 cargo component new my-component --lib
 cd my-component
 ```
 
 2. Define your WIT interface in `wit/world.wit`. Here's a basic example:
+
 ```wit
 package component:my-component;
 
 world my-world {
     // For having access to ECS functions like register-component
     import wasvy:ecs/functions;
-    
+
     /// This is important.
     /// This makes it so the WASM module must implement the guest required functions by the Bevy host.
     include wasvy:ecs/guest;
@@ -133,27 +118,35 @@ world my-world {
 ```
 
 3. Configure `wkg` (Skip this if you already have it configured):
+
 ```bash
 wkg config --edit
 ```
+
 Then add the following line to your config:
+
 ```toml
 default_registry = "wa.dev"
 ```
+
 This will make `wkg` use `wa.dev` as the default registry, which is where Wasvy WIT files are stored.
 
 4. Fetch the Wasvy WIT files from the registry:
+
 ```bash
 wkg wit fetch
 ```
 
 5. Build your component (This will also generate a `bindings.rs` file):
+
 ```bash
 cargo component build --release
 ```
+
 The resulting `.wasm` file will be in `target/wasm32-unknown-unknown/release/my_component.wasm`.
 
 6. Implement your component in `src/lib.rs`. Check [`examples/simple/src/lib.rs`](examples/simple/src/lib.rs) for a full example:
+
 ```rust
 #[allow(warnings)]
 mod bindings;
@@ -200,6 +193,7 @@ Check out the examples directory for more detailed usage:
 Contributions come in many forms, and I welcome all kinds of help! Here's how you can contribute:
 
 ### Code Contributions
+
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
 3. Commit your changes (`git commit -m 'Add some amazing feature'`)
@@ -207,7 +201,9 @@ Contributions come in many forms, and I welcome all kinds of help! Here's how yo
 5. Open a Pull Request
 
 ### Non-Code Contributions
+
 I am actively looking for:
+
 - Feature suggestions and ideas
 - Use case examples
 - Documentation improvements
@@ -217,11 +213,13 @@ I am actively looking for:
 - Modding workflow suggestions
 
 You don't need to write code to help out! If you have an idea or suggestion, please:
+
 1. Open an issue to discuss it
 2. Share your thoughts in the discussions
 3. Create a feature request
 
 Please make sure to:
+
 - Follow Rust coding standards (for code contributions)
 - Add tests for new features (Not required for now, but will be appreciated)
 - Update documentation as needed
@@ -230,16 +228,17 @@ Please make sure to:
 ## Roadmap
 
 ### Phase 1: Core Integration (Current)
+
 - [x] Basic WASM component loading
 - [x] WASI support
 - [ ] Component lifecycle management
 - [ ] Parallel WASM system execution.
-- [ ] Macros in Rust WASM components for making registring Bevy compoennts and systems more ergonomic.
+- [ ] Macros in Rust WASM components for making registring Bevy components and systems more ergonomic.
 - [ ] Mutable query data in systems.
 - [ ] Error handling improvements
 
-
 ### Phase 2: Enhanced Features
+
 - [ ] Hot reloading support for WASM components
 - [ ] Test suite
 - [ ] Cross-component communication
@@ -248,13 +247,14 @@ Please make sure to:
 - [ ] Add go example
 
 ### Phase 3: Production Ready
+
 - [ ] Comprehensive documentation
 - [ ] Benchmarking suite
 - [ ] Stable API
 
 ## Resources
 
-- [WASM Component Model Documentation](https://component-model.bytecodealliance.org/introduction.html) - The best resource on WIT and how the WASM component model works in practicality. 
+- [WASM Component Model Documentation](https://component-model.bytecodealliance.org/introduction.html) - The best resource on WIT and how the WASM component model works in practicality.
 - [Wasmtime Examples](https://github.com/bytecodealliance/wasmtime/tree/main/examples/component)
 - [Component Model Examples](https://github.com/bytecodealliance/component-docs/tree/main/component-model/examples/example-host)
 - [Cargo Component](https://github.com/bytecodealliance/cargo-component) - I used that for making the WASM component examples.
