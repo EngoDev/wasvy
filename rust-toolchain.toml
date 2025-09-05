@@ -1,11 +1,4 @@
 [toolchain]
-channel = "stable"
-components = [
-    "cargo",
-    "llvm-tools",
-    "rustc",
-    "rust-src",
-    "rustfmt",
-    # "rust-analyzer",
-]
+channel = "1.88.0"
+components = ["cargo", "llvm-tools", "rustc", "rust-src", "rustfmt"]
 targets = ["wasm32-wasip1"]
