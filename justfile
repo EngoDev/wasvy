@@ -1,12 +1,13 @@
 build-example example:
 	cargo component build --release -p {{example}}
+	cp ./target/wasm32-wasip1/release/{{example}}.wasm ./examples/assets/mods
 
 run-host-example:
-	cargo run -p host_example
+	cargo run -p host_example --features bevy/file_watcher
 
 # Requires `poetry` to run
 build-example-python:
-	cd examples/python_example/src/python_example && poetry run componentize-py --wit-path ../../wit/ --world guest componentize app -o ../../../../python.wasm
+	cd examples/python_example/src/python_example && poetry run componentize-py --wit-path ../../wit/ --world guest componentize app -o ../../../assets/mods/python.wasm
 
 # Create the bindings for the python example
 example-bindings-python:
