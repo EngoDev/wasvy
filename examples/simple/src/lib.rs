@@ -1,121 +1,55 @@
-#[allow(warnings)]
-mod bindings;
+use bevy_transform::components::Transform;
+use wit_bindgen::rt::async_support;
 
-use bindings::{
-    Guest,
-    wasvy::{
-        self,
-        ecs::types::{Component, Query},
-    },
-};
-use serde::{Deserialize, Serialize};
-
-use bevy::{prelude::*, reflect::Type};
+mod bindings {
+    wit_bindgen::generate!({
+        path: "../../wit/ecs/ecs.wit",
+        world: "guest",
+    });
+}
+use bindings::{wasvy::ecs::api::*, *};
 
 struct GuestComponent;
 
-#[derive(Debug, Reflect, Serialize, Deserialize)]
-pub struct FirstComponent {
-    pub first: usize,
-}
-
-#[derive(Debug, Reflect, Serialize, Deserialize)]
-pub struct SecondComponent {
-    pub second: usize,
-}
-
 impl Guest for GuestComponent {
-    fn hello_world() -> String {
-        "Hello, World!".to_string()
-    }
-
-    /// The params in this instance will be equal to: `[Query<&FirstComponent>]`
-    /// due to how the system was registered in `setup`.
-    ///
-    /// If for example the system was registered with
-    /// `components: [simple::FirstComponent, simple::SecondComponent]`
-    /// then params would be equal to `[Query<(&FirstComponent, &SecondComponent)>]`
-    fn print_first_component_system(params: Vec<bindings::QueryResult>) {
-        let first_component_query = params.first().unwrap();
-        for row in first_component_query {
-            let entity = row.entity;
-            println!("Entity: {:?}", entity);
-            let component = row.components.first().unwrap();
-            let first_component: FirstComponent = serde_json::from_str(&component.value).unwrap();
-            println!("Component: {:?}", first_component);
-        }
-    }
-
-    fn two_components_in_a_query(params: Vec<bindings::QueryResult>) {
-        let query = params.first().unwrap();
-        for row in query {
-            let second_component_serialized = row.components.first().unwrap();
-            let second_component: SecondComponent =
-                serde_json::from_str(&second_component_serialized.value).unwrap();
-
-            let transform_component_serialized = &row.components[1];
-            let transform_component: Transform =
-                serde_json::from_str(&transform_component_serialized.value).unwrap();
-
-            println!(
-                "Second Component: {:?}, Transform: {:?}",
-                second_component, transform_component
-            );
-        }
-    }
-
     fn setup() {
-        let first_component_type_path = Type::of::<FirstComponent>().path();
-        let second_component_type_path = Type::of::<SecondComponent>().path();
-        let transform_type_path = Type::of::<Transform>().path();
-
-        let _id1 = wasvy::ecs::functions::register_component(first_component_type_path);
-        let _id2 = wasvy::ecs::functions::register_component(second_component_type_path);
-
-        wasvy::ecs::functions::register_system(
-            "print-first-component-system",
-            &[Query {
-                components: vec![first_component_type_path.to_string()],
-                with: vec![],
-                without: vec![],
-            }],
-        );
-
-        wasvy::ecs::functions::register_system(
-            "two-components-in-a-query",
-            &[Query {
-                components: vec![
-                    second_component_type_path.to_string(),
-                    transform_type_path.to_string(),
-                ],
-                with: vec![],
-                without: vec![],
-            }],
-        );
-
-        let first_serialized = serde_json::to_string(&FirstComponent { first: 18 }).unwrap();
-        let second_serialized = serde_json::to_string(&SecondComponent { second: 18 }).unwrap();
-        let transform_serialized = serde_json::to_string(
-            &Transform::default().with_translation(Vec3::new(10.0, 20.0, 30.0)),
-        )
-        .unwrap();
-
-        wasvy::ecs::functions::spawn(&[Component {
-            path: first_component_type_path.to_string(),
-            value: first_serialized,
-        }]);
-
-        wasvy::ecs::functions::spawn(&[
-            Component {
-                path: second_component_type_path.to_string(),
-                value: second_serialized,
-            },
-            Component {
-                path: transform_type_path.to_string(),
-                value: transform_serialized,
-            },
+        // Define a new system that queries for entities with a Transform and a Marker component
+        let my_system = SystemBuilder::new("my_system");
+        my_system.add_query(&[
+            Query::Mut("bevy_transform::components::Transform".to_string()),
+            Query::With("host_example::Marker".to_string()),
         ]);
+        let (my_system, mut stream) = my_system.build();
+
+        // Register the system to run in the Update schedule
+        let m = Mod::new("simple");
+        m.add_systems(Schedule::Update, vec![my_system]);
+
+        // Start listening to the event stream
+        async_support::spawn(async move {
+            loop {
+                let input = match stream.next().await {
+                    Some(e) => e,
+                    None => break,
+                };
+
+                let query = input.next().as_query();
+                loop {
+                    let results = match query.iter() {
+                        Some(e) => e,
+                        None => break,
+                    };
+
+                    let mut transform: Transform = serde_json::from_str(&results[0].get()).unwrap();
+
+                    // Simply rotate the entity a bit on each frame
+                    transform.rotate_x(2.0);
+
+                    results[0].set(&serde_json::to_string(&transform).unwrap());
+                }
+            }
+        });
     }
 }
 
-bindings::export!(GuestComponent with_types_in bindings);
+export!(GuestComponent);
