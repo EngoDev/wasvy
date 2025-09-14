@@ -18,7 +18,7 @@ world guest {
 }
 
 interface api {
-	// A mod, similar to bevy::App
+	/// A mod, similar to bevy::App
 	resource mod {
 		/// Construct an new Mod: an interface through which mods may interact with the bevy world.
 		///
