@@ -4,6 +4,8 @@ package wasvy:ecs;
 /// Like `register-system`.
 world host {
 	import app;
+	import system-params;
+	import types;
 }
 
 /// This is the world that the WASM guest implements.
