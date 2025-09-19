@@ -3,7 +3,7 @@ package wasvy:ecs;
 /// This is the world that the bevy host implements to give ECS functionality to the WASM component.
 /// Like `register-system`.
 world host {
-	import api;
+	import app;
 }
 
 /// This is the world that the WASM guest implements.
@@ -11,20 +11,24 @@ world host {
 /// These are basically the mandatory functons that a WASM component
 /// must have for it to be called from the Bevy host.
 world guest {
-	import api;
+	import app;
+	import system-params;
+	import types;
 
 	/// This function is called once on startup for each WASM component (Not Bevy component).
 	export setup: func();
 }
 
-interface api {
+interface app {
+	use types.{schedule, query};
+
 	/// A mod, similar to bevy::App
-	resource mod {
-		/// Construct an new Mod: an interface through which mods may interact with the bevy world.
+	resource app {
+		/// Construct an new App: an interface through which mods may interact with the bevy world.
 		///
 		/// Each mod may only do this once inside its setup function call. Attempting to do this
 		/// twice or outside setup will trap.
-		constructor(name: string);
+		constructor();
 
 		/// Adds systems to the mod
 		add-systems: func(
@@ -33,89 +37,49 @@ interface api {
 		);
 	}
 
+	/// An interface with which to define a new system for the host
+	///
+	/// Usage:
+	/// 1. Construct a new system, giving it a unique name
+	/// 2. Add system-params by calling 0 or more add-* methods
+	/// 3. Order the system relative to others
+	/// 4. Add the system to a schedule
 	resource system {
+		/// Constructs a new system. Use the same name as exported in
+		/// the guest world, otherwise the host won't be able to find it.
+		constructor(name: string);
+
+		/// Adds a commands system-param
+		add-commands: func();
+
+		/// Adds a query system-param
+		add-query: func(query: list<query>);
+
 		/// Schedules this system be run before another system
 		before: func(other: borrow<system>);
 
 		/// Schedules this system be run after another system
 		after: func(other: borrow<system>);
 	}
+}
 
-	/// An interface with which to construct a new system
-	///
-	/// Usage:
-	/// 1. Construct a new system, giving it a unique name
-	/// 2. Add system-params by calling 0 or more add-* methods
-	/// 3. .build the system
-	/// 4. Add the system to a schedule
-	/// 5. Await the returned stream in a thread
-	resource system-builder {
-		/// Constructs a new system
-		///
-		/// Traps if the name is not unique
-		constructor(name: string);
+interface system-params {
+	use types.{component};
 
-		/// Adds a commands system-param
-		///
-		/// Traps if the system is built
-		add-commands: func();
-
-		/// Adds a query system-param
-		///
-		/// Traps if the system is built
-		add-query: func(query: list<query>);
-
-		/// Builds the system.
-		///
-		/// Use the returned stream to react whenever the system runs.
-		///
-		/// Since a wit version of callbacks does not really exist, the idomatic
-		/// wit way to do this is:
-		///
-		/// 1. Create a new thread
-		/// 2. Loop infinitely
-		/// 3. Await and read from the stream
-		///
-		/// For systems that only need to run once (such as on startup), you can
-		/// remove this loop. However, it's important to use a thread to avoid
-		/// blocking guest:setup and allow all systems to run in parallel.
-		///
-		/// Traps if:
-		/// - There are conficting system-params
-		/// - The system was already built
-		build: func() -> tuple<system, stream<in>>;
-	}
-
-	/// A system's input
-	resource in {
-		/// Allows iterating over input system-params
-		///
-		/// Traps if there is no next system parameter
-		next: func() -> system-param;
-	}
-
-	resource system-param {
-		/// If this system param is a command, return a command.
-		///
-		/// Traps if this system-param is not a command
-		as-commands: func() -> commands;
-
-		/// If this system-param is a query, return query-results
-		///
-		/// Traps if this system-param is not a query
-		as-query: func() -> query-results;
-	}
-
+	/// A commands system param
 	resource commands {
 		spawn: func(components: list<component>);
 		// etc
 	}
 
+	/// A commands system param
 	resource query-results {
 		/// Evaluates and returns the next query results
 		iter: func() -> option<list<component>>;
 	}
+}
 
+interface types {
 	resource component {
 		/// Gets the value of a component
 		get: func() -> serialized-component;
