@@ -1,4 +1,3 @@
-// We actually don't use this; it's just to let bindgen! ind the corresponding world in wit/deps.
 package component:simple;
 
 /// An example world for the component to target.

@@ -8,7 +8,7 @@ world host {
 
 /// This is the world that the WASM guest implements.
 ///
-/// These are basically the mandatory functons that a WASM component
+/// These are basically the mandatory functions that a WASM component
 /// must have for it to be called from the Bevy host.
 world guest {
 	import app;
