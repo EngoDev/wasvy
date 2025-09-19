@@ -2,10 +2,10 @@ package component:simple;
 
 /// An example world for the component to target.
 world example {
-    use wasvy:ecs/system-params.{commands, query-results};
+    use wasvy:ecs/system-params.{commands, query};
 
     /// An example system
-    export my-system: func(commands: commands, query: query-results);
+    export my-system: func(commands: commands, query: query);
 
     /// This is important.
     /// This makes it so the WASM module must implement the guest required functions by the Bevy host.

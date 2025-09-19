@@ -22,7 +22,7 @@ world guest {
 }
 
 interface app {
-	use types.{schedule, query};
+	use types.{schedule, query-for};
 
 	/// A mod, similar to bevy::App
 	resource app {
@@ -55,7 +55,7 @@ interface app {
 		add-commands: func();
 
 		/// Adds a query system-param
-		add-query: func(query: list<query>);
+		add-query: func(query: list<query-for>);
 
 		/// Schedules this system be run before another system
 		before: func(other: borrow<system>);
@@ -74,8 +74,8 @@ interface system-params {
 		// etc
 	}
 
-	/// A commands system param
-	resource query-results {
+	/// A query system param
+	resource query {
 		/// Evaluates and returns the next query results
 		iter: func() -> option<list<component>>;
 	}
@@ -106,7 +106,7 @@ interface types {
 		update
 	}
 
-	variant query {
+	variant query-for {
 		ref(type-name),
 		mut(type-name),
 		optional(type-name),

@@ -18,8 +18,8 @@ mod bindings {
 use bindings::{
     wasvy::ecs::{
         app::{App, System},
-        system_params::{Commands, QueryResults},
-        types::{Query, Schedule},
+        system_params::{Commands, Query},
+        types::{QueryFor, Schedule},
     },
     *,
 };
@@ -31,8 +31,8 @@ impl Guest for GuestComponent {
         // Define a new system that queries for entities with a Transform and a Marker component
         let my_system = System::new("my_system");
         my_system.add_query(&[
-            Query::Mut("bevy_transform::components::Transform".to_string()),
-            Query::With("host_example::Marker".to_string()),
+            QueryFor::Mut("bevy_transform::components::Transform".to_string()),
+            QueryFor::With("host_example::Marker".to_string()),
         ]);
 
         // Register the system to run in the Update schedule
@@ -40,7 +40,7 @@ impl Guest for GuestComponent {
         app.add_systems(Schedule::Update, vec![my_system]);
     }
 
-    fn my_system(_commands: Commands, query: QueryResults) -> () {
+    fn my_system(_commands: Commands, query: Query) -> () {
         loop {
             let results = match query.iter() {
                 Some(e) => e,
