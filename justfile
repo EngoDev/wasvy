@@ -1,7 +1,7 @@
 build-example example:
 	cargo build --release --target wasm32-wasip2 -p {{example}}
-	mkdir -p ./examples/assets/mods
-	cp ./target/wasm32-wasip2/release/{{example}}.wasm ./examples/assets/mods
+	mkdir -p ./examples/host_example/assets/mods
+	cp ./target/wasm32-wasip2/release/{{example}}.wasm ./examples/host_example/assets/mods
 
 run-host-example:
 	cargo run -p host_example --features bevy/file_watcher

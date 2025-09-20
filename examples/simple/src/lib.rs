@@ -1,10 +1,6 @@
 use bevy_transform::components::Transform;
 
 mod bindings {
-    // This could be replaced with wit_bindgen::generate!() in the future,
-    // since it can resolve the path and world from Cargo.toml
-    // But it currently has issues resolving wasvy:ecs...
-    // almost like it ignores [package.metadata.component.target.dependencies]
     wit_bindgen::generate!({
         path: ["../../wit/ecs", "./wit"],
         world: "component:simple/example",
