@@ -1,5 +1,3 @@
-use bevy_transform::components::Transform;
-
 mod bindings {
     wit_bindgen::generate!({
         path: ["../../wit/ecs", "./wit"],
@@ -14,8 +12,7 @@ mod bindings {
 use bindings::{
     wasvy::ecs::{
         app::{App, System},
-        system_params::{Commands, Query},
-        types::{QueryFor, Schedule},
+        types::Schedule,
     },
     *,
 };
@@ -26,30 +23,14 @@ impl Guest for GuestComponent {
     fn setup() {
         // Define a new system that queries for entities with a Transform and a Marker component
         let my_system = System::new("my_system");
-        my_system.add_query(&[
-            QueryFor::Mut("bevy_transform::components::Transform".to_string()),
-            QueryFor::With("host_example::Marker".to_string()),
-        ]);
 
         // Register the system to run in the Update schedule
         let app = App::new();
         app.add_systems(Schedule::Update, vec![my_system]);
     }
 
-    fn my_system(_commands: Commands, query: Query) -> () {
-        loop {
-            let results = match query.iter() {
-                Some(e) => e,
-                None => break,
-            };
-
-            let mut transform: Transform = serde_json::from_str(&results[0].get()).unwrap();
-
-            // Simply rotate the entity a bit on each frame
-            transform.rotate_x(2.0);
-
-            results[0].set(&serde_json::to_string(&transform).unwrap());
-        }
+    fn my_system() -> () {
+        println!("Running my_system");
     }
 }
 
