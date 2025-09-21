@@ -2,7 +2,7 @@ use crate::{
     asset::{ModAsset, ModAssetLoader},
     component_registry::WasmComponentRegistry,
     engine::Engine,
-    state::new_store,
+    systems::run_setup,
 };
 use bevy::prelude::*;
 
@@ -29,7 +29,7 @@ impl Plugin for ModloaderPlugin {
         app.insert_resource(engine)
             .init_resource::<WasmComponentRegistry>();
 
-        app.add_systems(Update, run_setup);
+        app.add_systems(PreUpdate, run_setup);
 
         let asset_plugins = app.get_added_plugins::<AssetPlugin>();
         let asset_plugin = asset_plugins
@@ -53,24 +53,6 @@ impl Plugin for ModloaderPlugin {
                 `Some(true)` or `Some(false)` in the AssetPlugin."
                 );
             }
-        }
-    }
-}
-
-fn run_setup(
-    engine: Res<Engine>,
-    mut events: MessageReader<AssetEvent<ModAsset>>,
-    assets: Res<Assets<ModAsset>>,
-) {
-    let mut state = new_store(&engine);
-
-    for event in events.read() {
-        match event {
-            AssetEvent::LoadedWithDependencies { id } | AssetEvent::Modified { id } => {
-                let asset = assets.get(*id).unwrap();
-                asset.setup(&mut state).unwrap();
-            }
-            _ => {}
         }
     }
 }

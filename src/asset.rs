@@ -7,13 +7,13 @@ use wasmtime::component::{Component, InstancePre, Val};
 
 use crate::{
     engine::Engine,
-    state::{State, Store},
+    state::{HostState, Store},
 };
 
 /// An asset representing a loaded wasvy Mod
 #[derive(Asset, TypePath)]
 pub struct ModAsset {
-    instance_pre: InstancePre<State>,
+    instance_pre: InstancePre<HostState>,
 }
 
 impl ModAsset {
@@ -57,18 +57,18 @@ impl ModAsset {
 
 /// The bevy [`AssetLoader`] for [`ModAsset`]
 pub struct ModAssetLoader {
-    linker: wasmtime::component::Linker<State>,
+    linker: wasmtime::component::Linker<HostState>,
 }
 
 impl ModAssetLoader {
     pub(crate) fn new(engine: &Engine) -> Self {
         let engine = engine.inner();
 
-        let mut linker: wasmtime::component::Linker<State> =
+        let mut linker: wasmtime::component::Linker<HostState> =
             wasmtime::component::Linker::new(&engine);
         wasmtime_wasi::p2::add_to_linker_sync(&mut linker).unwrap();
 
-        type Data = wasmtime::component::HasSelf<State>;
+        type Data = wasmtime::component::HasSelf<HostState>;
         crate::bindings::wasvy::ecs::app::add_to_linker::<_, Data>(&mut linker, |state| state)
             .unwrap();
 

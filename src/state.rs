@@ -1,129 +1,129 @@
-use anyhow::bail;
-use wasmtime::{
-    Result,
-    component::{HasData, Resource},
-};
-use wasmtime_wasi::{ResourceTable, WasiCtx, WasiCtxView, WasiView};
-
-use crate::{
-    bindings::wasvy::ecs::app::{
-        App, Commands, Component, Host, HostApp, HostCommands, HostComponent, HostQuery,
-        HostSystem, Query, QueryFor, Schedule, SerializedComponent, System,
-    },
-    engine::Engine,
+use std::{
+    marker::PhantomData,
+    sync::{Arc, Mutex},
 };
 
-pub(crate) type Store = wasmtime::Store<State>;
+use bevy::ecs::schedule::Schedules;
+use wasmtime_wasi::{ResourceTable, WasiCtx, WasiCtxBuilder, WasiCtxView, WasiView};
+
+use crate::{engine::Engine, send_sync_ptr::SendSyncPtr};
+
+pub(crate) type Store = wasmtime::Store<HostState>;
 
 pub(crate) fn new_store(engine: &Engine) -> Store {
-    Store::new(
-        engine,
-        State {
-            wasi_ctx: WasiCtx::builder().build(),
-            resource_table: ResourceTable::new(),
-        },
-    )
+    Store::new(engine, HostState::new())
 }
 
-pub(crate) struct State {
-    wasi_ctx: WasiCtx,
-    resource_table: ResourceTable,
+pub(crate) struct HostState {
+    /// The lifetime of a [`wasmtime::Store`] is bound to a 'static lifetime, which is problematic for us
+    /// since we want to pass references to system params which have shorter lifetimes.
+    ///
+    /// Thus we use this Mutex and a container to hold pointers.
+    ///
+    /// A guard holds access and removes the references held in inner when they go out of scope
+    inner: Arc<Mutex<Inner>>,
+    table: ResourceTable,
+    ctx: WasiCtx,
 }
 
-impl HasData for State {
-    type Data<'a> = WasiCtxView<'a>;
+impl HostState {
+    fn new() -> Self {
+        let table = ResourceTable::new();
+        let ctx = WasiCtxBuilder::new()
+            .inherit_stdio()
+            .inherit_network()
+            .allow_ip_name_lookup(true)
+            .build();
+
+        Self {
+            inner: Arc::new(Mutex::new(Inner::Uninitialized)),
+            table,
+            ctx,
+        }
+    }
+
+    pub(crate) fn scope<'s>(&self, scope: Scope<'s>) -> ScopeGuard<'s> {
+        let mut inner = self.inner.lock().unwrap();
+        assert!(
+            matches!(*inner, Inner::Uninitialized),
+            "State is already scoped. The ScopeGuard must be dropped first."
+        );
+
+        *inner = match scope {
+            Scope::Setup { schedules } => Inner::Setup {
+                schedules: SendSyncPtr::new(schedules.into()),
+                app: None,
+            },
+            Scope::RunSystem => Inner::RunSystem,
+        };
+
+        ScopeGuard {
+            inner: Arc::clone(&self.inner),
+            referencing: PhantomData,
+        }
+    }
+
+    pub(crate) fn access<F, R>(&mut self, mut f: F) -> R
+    where
+        F: FnMut(State<'_>) -> R,
+    {
+        let table = &mut self.table;
+        let mut inner = self.inner.lock().unwrap();
+        let state = match &mut *inner {
+            Inner::Setup { schedules, app } => State::Setup {
+                // Safety: Always contains a reference to an initialized value, and borrow_mut ensures this is the only borrow
+                schedules: unsafe { schedules.as_mut() },
+                app,
+                table,
+            },
+            Inner::RunSystem => State::RunSystem,
+            Inner::Uninitialized => panic!("Attempting to get state from unscoped HostState"),
+        };
+        f(state)
+    }
 }
 
-impl WasiView for State {
+pub(crate) enum State<'s> {
+    Setup {
+        schedules: &'s mut Schedules,
+        table: &'s mut ResourceTable,
+        app: &'s mut Option<u32>,
+    },
+    RunSystem,
+}
+
+enum Inner {
+    Uninitialized,
+    Setup {
+        schedules: SendSyncPtr<Schedules>,
+        app: Option<u32>,
+    },
+    RunSystem,
+}
+
+pub(crate) enum Scope<'s> {
+    Setup { schedules: &'s mut Schedules },
+    RunSystem,
+}
+
+impl WasiView for HostState {
     fn ctx(&mut self) -> WasiCtxView<'_> {
         WasiCtxView {
-            ctx: &mut self.wasi_ctx,
-            table: &mut self.resource_table,
+            ctx: &mut self.ctx,
+            table: &mut self.table,
         }
     }
 }
 
-impl Host for State {}
-
-impl HostApp for State {
-    fn new(&mut self) -> Result<Resource<App>> {
-        bail!("Unimplemented")
-    }
-
-    fn add_systems(
-        &mut self,
-        _self: Resource<App>,
-        _schedule: Schedule,
-        _systems: Vec<Resource<System>>,
-    ) -> Result<()> {
-        Ok(())
-    }
-
-    fn drop(&mut self, _rep: Resource<App>) -> Result<()> {
-        Ok(())
-    }
+/// A guard that ensures that the lifetimes of pointers stored in [`Inner`] are respected
+pub struct ScopeGuard<'a> {
+    inner: Arc<Mutex<Inner>>,
+    referencing: PhantomData<&'a ()>,
 }
 
-impl HostSystem for State {
-    fn new(&mut self, _name: String) -> Result<Resource<System>> {
-        bail!("Unimplemented")
-    }
-
-    fn add_commands(&mut self, _self: Resource<System>) -> Result<()> {
-        Ok(())
-    }
-
-    fn add_query(&mut self, _self: Resource<System>, _query: Vec<QueryFor>) -> Result<()> {
-        Ok(())
-    }
-
-    fn before(&mut self, _self: Resource<System>, _other: Resource<System>) -> Result<()> {
-        Ok(())
-    }
-
-    fn after(&mut self, _self: Resource<System>, _other: Resource<System>) -> Result<()> {
-        Ok(())
-    }
-
-    fn drop(&mut self, _rep: Resource<System>) -> Result<()> {
-        Ok(())
-    }
-}
-
-impl HostCommands for State {
-    fn spawn(
-        &mut self,
-        _self: Resource<Commands>,
-        _components: Vec<Resource<Component>>,
-    ) -> Result<()> {
-        bail!("Unimplemented")
-    }
-
-    fn drop(&mut self, _rep: Resource<Commands>) -> Result<()> {
-        Ok(())
-    }
-}
-
-impl HostQuery for State {
-    fn iter(&mut self, __self: Resource<Query>) -> Result<Option<Vec<Resource<Component>>>> {
-        bail!("Unimplemented")
-    }
-
-    fn drop(&mut self, _rep: Resource<Query>) -> Result<()> {
-        Ok(())
-    }
-}
-
-impl HostComponent for State {
-    fn get(&mut self, _self: Resource<Component>) -> Result<SerializedComponent> {
-        bail!("Unimplemented")
-    }
-
-    fn set(&mut self, _self: Resource<Component>, _value: SerializedComponent) -> Result<()> {
-        Ok(())
-    }
-
-    fn drop(&mut self, _rep: Resource<Component>) -> Result<()> {
-        Ok(())
+impl Drop for ScopeGuard<'_> {
+    fn drop(&mut self) {
+        let mut inner = self.inner.lock().unwrap();
+        *inner = Inner::Uninitialized;
     }
 }
