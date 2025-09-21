@@ -2,7 +2,7 @@ package component:simple;
 
 /// An example world for the component to target.
 world example {
-    use wasvy:ecs/system-params.{commands, query};
+    use wasvy:ecs/app.{commands, query};
 
     /// An example system
     export my-system: func();

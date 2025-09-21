@@ -4,16 +4,11 @@ mod bindings {
         world: "component:simple/example",
         with: {
             "wasvy:ecs/app": generate,
-            "wasvy:ecs/types": generate,
-            "wasvy:ecs/system-params": generate,
         }
     });
 }
 use bindings::{
-    wasvy::ecs::{
-        app::{App, System},
-        types::Schedule,
-    },
+    wasvy::ecs::app::{App, Schedule, System},
     *,
 };
 

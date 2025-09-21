@@ -4,8 +4,6 @@ package wasvy:ecs;
 /// Like `register-system`.
 world host {
 	import app;
-	import system-params;
-	import types;
 }
 
 /// This is the world that the WASM guest implements.
@@ -14,16 +12,12 @@ world host {
 /// must have for it to be called from the Bevy host.
 world guest {
 	import app;
-	import system-params;
-	import types;
 
 	/// This function is called once on startup for each WASM component (Not Bevy component).
 	export setup: func();
 }
 
 interface app {
-	use types.{schedule, query-for};
-
 	/// A mod, similar to bevy::App
 	resource app {
 		/// Construct an new App: an interface through which mods may interact with the bevy world.
@@ -63,10 +57,6 @@ interface app {
 		/// Schedules this system be run after another system
 		after: func(other: borrow<system>);
 	}
-}
-
-interface system-params {
-	use types.{component};
 
 	/// A commands system param
 	resource commands {
@@ -79,9 +69,7 @@ interface system-params {
 		/// Evaluates and returns the next query results
 		iter: func() -> option<list<component>>;
 	}
-}
 
-interface types {
 	resource component {
 		/// Gets the value of a component
 		get: func() -> serialized-component;
