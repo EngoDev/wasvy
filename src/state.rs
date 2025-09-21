@@ -6,13 +6,7 @@ use std::{
 use bevy::ecs::schedule::Schedules;
 use wasmtime_wasi::{ResourceTable, WasiCtx, WasiCtxBuilder, WasiCtxView, WasiView};
 
-use crate::{engine::Engine, send_sync_ptr::SendSyncPtr};
-
-pub(crate) type Store = wasmtime::Store<HostState>;
-
-pub(crate) fn new_store(engine: &Engine) -> Store {
-    Store::new(engine, HostState::new())
-}
+use crate::send_sync_ptr::SendSyncPtr;
 
 pub(crate) struct HostState {
     /// The lifetime of a [`wasmtime::Store`] is bound to a 'static lifetime, which is problematic for us
@@ -27,7 +21,7 @@ pub(crate) struct HostState {
 }
 
 impl HostState {
-    fn new() -> Self {
+    pub(crate) fn new() -> Self {
         let table = ResourceTable::new();
         let ctx = WasiCtxBuilder::new()
             .inherit_stdio()

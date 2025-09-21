@@ -1,13 +1,14 @@
 use anyhow::{Context, Result, anyhow, bail};
 use bevy::{
     asset::{Asset, AssetLoader, LoadContext, io::Reader},
+    ecs::schedule::Schedules,
     reflect::TypePath,
 };
 use wasmtime::component::{Component, InstancePre, Val};
 
 use crate::{
     engine::Engine,
-    state::{HostState, Store},
+    state::{HostState, Scope},
 };
 
 /// An asset representing a loaded wasvy Mod
@@ -27,25 +28,27 @@ impl ModAsset {
         Ok(Self { instance_pre })
     }
 
-    fn call(&self, mut store: &mut Store, name: &str, params: &[Val]) -> Result<Vec<Val>> {
-        let instance = self
-            .instance_pre
-            .instantiate(&mut store)
-            .context("Failed to instantiate component")?;
+    fn call(&self, engine: &Engine, scope: Scope, name: &str, params: &[Val]) -> Result<Vec<Val>> {
+        engine.use_store(scope, move |mut store| {
+            let instance = self
+                .instance_pre
+                .instantiate(&mut store)
+                .context("Failed to instantiate component")?;
 
-        let func = instance
-            .get_func(&mut store, name)
-            .ok_or(anyhow!("Missing setup function"))?;
+            let func = instance
+                .get_func(&mut store, name)
+                .ok_or(anyhow!("Missing setup function"))?;
 
-        let mut results = vec![];
-        func.call(&mut store, params, &mut results)
-            .expect("failed to run the desired function");
+            let mut results = vec![];
+            func.call(&mut store, params, &mut results)
+                .expect("failed to run the desired function");
 
-        Ok(results)
+            Ok(results)
+        })
     }
 
-    pub(crate) fn setup(&self, store: &mut Store) -> Result<()> {
-        let results = self.call(store, "setup", &[])?;
+    pub(crate) fn setup(&self, engine: &Engine, schedules: &mut Schedules) -> Result<()> {
+        let results = self.call(engine, Scope::Setup { schedules }, "setup", &[])?;
 
         if !results.is_empty() {
             bail!("Mod setup returned values: {:?}, expected []", results);

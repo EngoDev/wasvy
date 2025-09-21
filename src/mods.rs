@@ -13,7 +13,7 @@ pub struct Mods<'w, 's> {
 /// Bevy drops assets if there are no active handles
 /// so this component exists to keep the handles alive.
 #[derive(Component, Reflect)]
-struct Mod {
+pub(crate) struct Mod {
     pub asset: Handle<ModAsset>,
 }
 
