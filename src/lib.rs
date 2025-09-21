@@ -1,13 +1,17 @@
 pub mod asset;
 pub mod component_registry;
-pub mod host;
+pub mod engine;
 pub mod mods;
 pub mod plugin;
 pub mod prelude;
-pub mod runner;
 pub mod state;
-pub mod systems;
 
 mod bindings {
-    wasmtime::component::bindgen!("host" in "wit/ecs/ecs.wit");
+    wasmtime::component::bindgen!({
+        path: "wit/ecs/ecs.wit",
+        world: "host",
+        // Interactions with `ResourceTable` can possibly trap so enable the ability
+        // to return traps from generated functions.
+        imports: { default: trappable },
+    });
 }

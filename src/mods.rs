@@ -1,6 +1,6 @@
 use bevy::{asset::AssetPath, ecs::system::SystemParam, prelude::*};
 
-use crate::asset::WasmComponentAsset;
+use crate::asset::ModAsset;
 
 /// This system param provides an interface to load and manage Wasvy mods
 #[derive(SystemParam)]
@@ -14,7 +14,7 @@ pub struct Mods<'w, 's> {
 /// so this component exists to keep the handles alive.
 #[derive(Component, Reflect)]
 struct Mod {
-    pub asset: Handle<WasmComponentAsset>,
+    pub asset: Handle<ModAsset>,
 }
 
 impl Mods<'_, '_> {
@@ -27,7 +27,7 @@ impl Mods<'_, '_> {
             .and_then(|s| s.to_str())
             .map(|s| s.to_string())
             .unwrap_or("unknown".to_string());
-        let asset = self.asset_server.load::<WasmComponentAsset>(path);
+        let asset = self.asset_server.load::<ModAsset>(path);
         self.commands.spawn((Name::new(name), Mod { asset }));
     }
 

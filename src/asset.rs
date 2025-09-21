@@ -1,44 +1,95 @@
+use anyhow::{Context, Result, anyhow, bail};
 use bevy::{
-    asset::{AssetLoader, LoadContext, io::Reader},
-    prelude::*,
+    asset::{Asset, AssetLoader, LoadContext, io::Reader},
+    reflect::TypePath,
 };
-use thiserror::Error;
-use wasmtime::Engine;
+use wasmtime::component::{Component, InstancePre, Val};
 
-#[derive(Asset, TypePath, Clone)]
-pub struct WasmComponentAsset {
-    pub component: wasmtime::component::Component,
+use crate::{
+    engine::Engine,
+    state::{State, Store},
+};
+
+/// An asset representing a loaded wasvy Mod
+#[derive(Asset, TypePath)]
+pub struct ModAsset {
+    instance_pre: InstancePre<State>,
 }
 
-pub struct WasmComponentAssetLoader {
-    pub engine: Engine,
+impl ModAsset {
+    pub(crate) async fn new(loader: &ModAssetLoader, reader: &mut dyn Reader) -> Result<Self> {
+        let mut bytes = vec![];
+        reader.read_to_end(&mut bytes).await?;
+
+        let component = Component::from_binary(&loader.linker.engine(), &bytes)?;
+        let instance_pre = loader.linker.instantiate_pre(&component)?;
+
+        Ok(Self { instance_pre })
+    }
+
+    fn call(&self, mut store: &mut Store, name: &str, params: &[Val]) -> Result<Vec<Val>> {
+        let instance = self
+            .instance_pre
+            .instantiate(&mut store)
+            .context("Failed to instantiate component")?;
+
+        let func = instance
+            .get_func(&mut store, name)
+            .ok_or(anyhow!("Missing setup function"))?;
+
+        let mut results = vec![];
+        func.call(&mut store, params, &mut results)
+            .expect("failed to run the desired function");
+
+        Ok(results)
+    }
+
+    pub(crate) fn setup(&self, store: &mut Store) -> Result<()> {
+        let results = self.call(store, "setup", &[])?;
+
+        if !results.is_empty() {
+            bail!("Mod setup returned values: {:?}, expected []", results);
+        }
+
+        Ok(())
+    }
 }
 
-/// Possible errors that can be produced by [`WasmComponentAssetLoader`]
-#[non_exhaustive]
-#[derive(Debug, Error)]
-pub enum WasmComponentAssetLoaderError {
-    /// An [IO](std::io) Error
-    #[error("Could not load asset: {0}")]
-    Io(#[from] std::io::Error),
+/// The bevy [`AssetLoader`] for [`ModAsset`]
+pub struct ModAssetLoader {
+    linker: wasmtime::component::Linker<State>,
 }
 
-impl AssetLoader for WasmComponentAssetLoader {
-    type Asset = WasmComponentAsset;
+impl ModAssetLoader {
+    pub(crate) fn new(engine: &Engine) -> Self {
+        let engine = engine.inner();
+
+        let mut linker: wasmtime::component::Linker<State> =
+            wasmtime::component::Linker::new(&engine);
+        wasmtime_wasi::p2::add_to_linker_sync(&mut linker).unwrap();
+
+        type Data = wasmtime::component::HasSelf<State>;
+        crate::bindings::wasvy::ecs::app::add_to_linker::<_, Data>(&mut linker, |state| state)
+            .unwrap();
+
+        Self { linker }
+    }
+}
+
+impl AssetLoader for ModAssetLoader {
+    type Asset = ModAsset;
     type Settings = ();
-    type Error = WasmComponentAssetLoaderError;
+    type Error = anyhow::Error;
 
     async fn load(
         &self,
         reader: &mut dyn Reader,
         _settings: &Self::Settings,
         _load_context: &mut LoadContext<'_>,
-    ) -> Result<Self::Asset, Self::Error> {
-        let mut bytes = vec![];
-        reader.read_to_end(&mut bytes).await.unwrap();
-        let component = wasmtime::component::Component::from_binary(&self.engine, &bytes).unwrap();
+    ) -> Result<Self::Asset> {
+        let asset = ModAsset::new(self, reader).await?;
 
-        Ok(WasmComponentAsset { component })
+        Ok(asset)
     }
 
     fn extensions(&self) -> &[&str] {
