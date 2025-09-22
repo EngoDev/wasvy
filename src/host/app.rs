@@ -1,5 +1,6 @@
 use super::*;
-use bevy::{app::Update, log::info};
+use anyhow::anyhow;
+use bevy::prelude::Update;
 
 pub struct App;
 
@@ -36,15 +37,17 @@ impl HostApp for HostState {
             };
 
             for system in systems.iter() {
-                let system = table.get(system)?;
-                let name = system.name.clone();
+                let system = table.get_mut(system)?;
+                let boxed_system = system
+                    .0
+                    .take()
+                    .ok_or(anyhow!("System was already added to the app"))?;
 
                 let schedule = match schedule {
                     Schedule::Update => Update,
                 };
-                schedules.add_systems(schedule, move || {
-                    info!("TODO: Run system {}", name);
-                });
+
+                schedules.add_systems(schedule, boxed_system);
             }
 
             Ok(())

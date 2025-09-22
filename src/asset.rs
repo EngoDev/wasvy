@@ -1,14 +1,13 @@
 use anyhow::{Context, Result, anyhow, bail};
 use bevy::{
     asset::{Asset, AssetLoader, LoadContext, io::Reader},
-    ecs::schedule::Schedules,
     reflect::TypePath,
 };
 use wasmtime::component::{Component, InstancePre, Val};
 
 use crate::{
     engine::Engine,
-    state::{HostState, Scope},
+    state::{HostState, Scope, SetupScope},
 };
 
 /// An asset representing a loaded wasvy Mod
@@ -37,7 +36,7 @@ impl ModAsset {
 
             let func = instance
                 .get_func(&mut store, name)
-                .ok_or(anyhow!("Missing setup function"))?;
+                .ok_or(anyhow!("Missing {} function", name))?;
 
             let mut results = vec![];
             func.call(&mut store, params, &mut results)
@@ -47,14 +46,18 @@ impl ModAsset {
         })
     }
 
-    pub(crate) fn setup(&self, engine: &Engine, schedules: &mut Schedules) -> Result<()> {
-        let results = self.call(engine, Scope::Setup { schedules }, "setup", &[])?;
+    pub(crate) fn setup(&self, engine: &Engine, scope: SetupScope<'_>) -> Result<()> {
+        let results = self.call(engine, Scope::Setup(scope), "setup", &[])?;
 
         if !results.is_empty() {
             bail!("Mod setup returned values: {:?}, expected []", results);
         }
 
         Ok(())
+    }
+
+    pub(crate) fn run_system(&self, engine: &Engine, name: &str) -> Result<Vec<Val>> {
+        self.call(engine, Scope::RunSystem, name, &[])
     }
 }
 

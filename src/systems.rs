@@ -1,4 +1,4 @@
-use crate::{asset::ModAsset, engine::Engine, mods::Mod};
+use crate::{asset::ModAsset, engine::Engine, mods::Mod, state::SetupScope};
 use bevy::prelude::*;
 
 pub(crate) fn run_setup(
@@ -28,7 +28,14 @@ pub(crate) fn run_setup(
                     .and_then(|name| Some(name.as_str()))
                     .unwrap_or("unknown");
 
-                match asset.setup(&engine, &mut schedules) {
+                match asset.setup(
+                    &engine,
+                    SetupScope {
+                        schedules: &mut schedules,
+                        asset_id: &id,
+                        mod_name: &name,
+                    },
+                ) {
                     Ok(()) => info!("Successfully loaded mod \"{}\"", name),
                     Err(err) => {
                         commands.entity(entity).despawn();

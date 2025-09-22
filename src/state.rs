@@ -3,10 +3,10 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use bevy::ecs::schedule::Schedules;
+use bevy::{asset::AssetId, ecs::schedule::Schedules};
 use wasmtime_wasi::{ResourceTable, WasiCtx, WasiCtxBuilder, WasiCtxView, WasiView};
 
-use crate::send_sync_ptr::SendSyncPtr;
+use crate::{asset::ModAsset, send_sync_ptr::SendSyncPtr};
 
 pub(crate) struct HostState {
     /// The lifetime of a [`wasmtime::Store`] is bound to a 'static lifetime, which is problematic for us
@@ -44,9 +44,15 @@ impl HostState {
         );
 
         *inner = match scope {
-            Scope::Setup { schedules } => Inner::Setup {
+            Scope::Setup(SetupScope {
+                schedules,
+                asset_id,
+                mod_name,
+            }) => Inner::Setup {
                 schedules: SendSyncPtr::new(schedules.into()),
                 app: None,
+                asset_id: *asset_id,
+                mod_name: mod_name.to_string(),
             },
             Scope::RunSystem => Inner::RunSystem,
         };
@@ -64,10 +70,17 @@ impl HostState {
         let table = &mut self.table;
         let mut inner = self.inner.lock().unwrap();
         let state = match &mut *inner {
-            Inner::Setup { schedules, app } => State::Setup {
+            Inner::Setup {
+                schedules,
+                app,
+                asset_id,
+                mod_name,
+            } => State::Setup {
                 // Safety: Always contains a reference to an initialized value, and borrow_mut ensures this is the only borrow
                 schedules: unsafe { schedules.as_mut() },
                 app,
+                asset_id,
+                mod_name,
                 table,
             },
             Inner::RunSystem => State::RunSystem,
@@ -82,6 +95,8 @@ pub(crate) enum State<'s> {
         schedules: &'s mut Schedules,
         table: &'s mut ResourceTable,
         app: &'s mut Option<u32>,
+        mod_name: &'s str,
+        asset_id: &'s AssetId<ModAsset>,
     },
     RunSystem,
 }
@@ -91,13 +106,21 @@ enum Inner {
     Setup {
         schedules: SendSyncPtr<Schedules>,
         app: Option<u32>,
+        mod_name: String,
+        asset_id: AssetId<ModAsset>,
     },
     RunSystem,
 }
 
 pub(crate) enum Scope<'s> {
-    Setup { schedules: &'s mut Schedules },
+    Setup(SetupScope<'s>),
     RunSystem,
+}
+
+pub(crate) struct SetupScope<'s> {
+    pub(crate) schedules: &'s mut Schedules,
+    pub(crate) asset_id: &'s AssetId<ModAsset>,
+    pub(crate) mod_name: &'s str,
 }
 
 impl WasiView for HostState {

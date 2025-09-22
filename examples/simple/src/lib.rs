@@ -17,7 +17,7 @@ struct GuestComponent;
 impl Guest for GuestComponent {
     fn setup() {
         // Define a new system that queries for entities with a Transform and a Marker component
-        let my_system = System::new("my_system");
+        let my_system = System::new("my-system");
 
         // Register the system to run in the Update schedule
         let app = App::new();
@@ -25,7 +25,7 @@ impl Guest for GuestComponent {
     }
 
     fn my_system() -> () {
-        println!("Running my_system");
+        println!("Running my-system");
     }
 }
 
