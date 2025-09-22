@@ -15,6 +15,7 @@ impl HostSystem for HostState {
                 table,
                 mod_name,
                 asset_id,
+                asset_version,
                 ..
             } = state
             else {
@@ -24,6 +25,7 @@ impl HostSystem for HostState {
             let mod_name = mod_name.to_string();
             let system_name = name.clone();
             let asset_id = asset_id.clone();
+            let asset_version = asset_version.clone();
 
             let boxed_system = Box::new(IntoSystem::into_system(
                 move |engine: Res<Engine>, assets: Res<Assets<ModAsset>>| {
@@ -31,6 +33,11 @@ impl HostSystem for HostState {
                     let Some(asset) = assets.get(asset_id) else {
                         return;
                     };
+
+                    // Skip mismatching system versions
+                    if asset.version != asset_version {
+                        return;
+                    }
 
                     info!("Running system \"{}\" from \"{}\"", system_name, mod_name);
                     let result = asset.run_system(&engine, &system_name);

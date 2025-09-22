@@ -3,7 +3,10 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use bevy::{asset::AssetId, ecs::schedule::Schedules};
+use bevy::{
+    asset::AssetId,
+    ecs::{component::Tick, schedule::Schedules},
+};
 use wasmtime_wasi::{ResourceTable, WasiCtx, WasiCtxBuilder, WasiCtxView, WasiView};
 
 use crate::{asset::ModAsset, send_sync_ptr::SendSyncPtr};
@@ -47,11 +50,13 @@ impl HostState {
             Scope::Setup(SetupScope {
                 schedules,
                 asset_id,
+                asset_version,
                 mod_name,
             }) => Inner::Setup {
                 schedules: SendSyncPtr::new(schedules.into()),
                 app: None,
                 asset_id: *asset_id,
+                asset_version,
                 mod_name: mod_name.to_string(),
             },
             Scope::RunSystem => Inner::RunSystem,
@@ -74,12 +79,14 @@ impl HostState {
                 schedules,
                 app,
                 asset_id,
+                asset_version,
                 mod_name,
             } => State::Setup {
                 // Safety: Always contains a reference to an initialized value, and borrow_mut ensures this is the only borrow
                 schedules: unsafe { schedules.as_mut() },
                 app,
                 asset_id,
+                asset_version,
                 mod_name,
                 table,
             },
@@ -97,6 +104,7 @@ pub(crate) enum State<'s> {
         app: &'s mut Option<u32>,
         mod_name: &'s str,
         asset_id: &'s AssetId<ModAsset>,
+        asset_version: &'s Tick,
     },
     RunSystem,
 }
@@ -108,6 +116,7 @@ enum Inner {
         app: Option<u32>,
         mod_name: String,
         asset_id: AssetId<ModAsset>,
+        asset_version: Tick,
     },
     RunSystem,
 }
@@ -120,6 +129,7 @@ pub(crate) enum Scope<'s> {
 pub(crate) struct SetupScope<'s> {
     pub(crate) schedules: &'s mut Schedules,
     pub(crate) asset_id: &'s AssetId<ModAsset>,
+    pub(crate) asset_version: Tick,
     pub(crate) mod_name: &'s str,
 }
 

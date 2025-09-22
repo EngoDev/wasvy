@@ -1,22 +1,22 @@
 use crate::{asset::ModAsset, engine::Engine, mods::Mod, state::SetupScope};
-use bevy::prelude::*;
+use bevy::{ecs::system::SystemChangeTick, prelude::*};
 
 pub(crate) fn run_setup(
+    tick: SystemChangeTick,
     mut events: MessageReader<AssetEvent<ModAsset>>,
-    assets: Res<Assets<ModAsset>>,
+    mut assets: ResMut<Assets<ModAsset>>,
     mut schedules: ResMut<Schedules>,
     engine: Res<Engine>,
     mut commands: Commands,
-    mut mods: Query<(Entity, Option<&Name>, &Mod)>,
+    mods: Query<(Entity, Option<&Name>, &Mod)>,
 ) {
     for event in events.read() {
         match event {
-            AssetEvent::LoadedWithDependencies { id } | AssetEvent::Modified { id } => {
-                let asset = assets.get(*id).unwrap();
+            AssetEvent::LoadedWithDependencies { id } => {
+                let asset = assets.get_mut(*id).unwrap();
 
                 // Find the mod entity matching this asset
-                let Some((entity, name, _)) =
-                    mods.iter_mut().find(|&(_, _, m)| m.asset.id() == *id)
+                let Some((entity, name, _)) = mods.iter().find(|&(_, _, m)| m.asset.id() == *id)
                 else {
                     warn!(
                         "Loaded wasm mod, but missing it's entity. Did you accidentally load a wasm asset?"
@@ -28,11 +28,15 @@ pub(crate) fn run_setup(
                     .and_then(|name| Some(name.as_str()))
                     .unwrap_or("unknown");
 
+                let asset_version = tick.this_run();
+                asset.version = asset_version;
+
                 match asset.setup(
                     &engine,
                     SetupScope {
                         schedules: &mut schedules,
                         asset_id: &id,
+                        asset_version,
                         mod_name: &name,
                     },
                 ) {

@@ -1,6 +1,7 @@
 use anyhow::{Context, Result, anyhow, bail};
 use bevy::{
     asset::{Asset, AssetLoader, LoadContext, io::Reader},
+    ecs::component::Tick,
     reflect::TypePath,
 };
 use wasmtime::component::{Component, InstancePre, Val};
@@ -13,6 +14,7 @@ use crate::{
 /// An asset representing a loaded wasvy Mod
 #[derive(Asset, TypePath)]
 pub struct ModAsset {
+    pub(crate) version: Tick,
     instance_pre: InstancePre<HostState>,
 }
 
@@ -24,7 +26,10 @@ impl ModAsset {
         let component = Component::from_binary(&loader.linker.engine(), &bytes)?;
         let instance_pre = loader.linker.instantiate_pre(&component)?;
 
-        Ok(Self { instance_pre })
+        Ok(Self {
+            version: Tick::MAX,
+            instance_pre,
+        })
     }
 
     fn call(&self, engine: &Engine, scope: Scope, name: &str, params: &[Val]) -> Result<Vec<Val>> {
