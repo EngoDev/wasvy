@@ -4,7 +4,7 @@ use bevy::prelude::Update;
 
 pub struct App;
 
-impl HostApp for HostState {
+impl HostApp for WasmHost {
     fn new(&mut self) -> Result<Resource<App>> {
         self.access(|state| {
             let State::Setup { table, app, .. } = state else {

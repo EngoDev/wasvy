@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::state::{HostState, Scope};
+use crate::state::{WasmHost, Scope};
 
 /// Cross engine instatiation of WASM components is not supported.
 /// This resources is the global [`Engine`](wasmtime::Engine) that is used for instatiation.
@@ -9,7 +9,7 @@ use crate::state::{HostState, Scope};
 #[derive(Resource, Clone, Deref)]
 pub(crate) struct Engine(wasmtime::Engine);
 
-pub(crate) type Store = wasmtime::Store<HostState>;
+pub(crate) type Store = wasmtime::Store<WasmHost>;
 
 impl Engine {
     pub(crate) fn new() -> Self {
@@ -25,7 +25,7 @@ impl Engine {
     where
         F: FnMut(Store) -> R,
     {
-        let data = HostState::new();
+        let data = WasmHost::new();
         let _guard = data.scope(scope);
 
         let store = Store::new(&self.0, data);

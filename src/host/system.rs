@@ -8,7 +8,7 @@ use bevy::{
 
 pub struct System(pub(crate) Option<BoxedSystem>);
 
-impl HostSystem for HostState {
+impl HostSystem for WasmHost {
     fn new(&mut self, name: String) -> Result<Resource<System>> {
         self.access(move |state| {
             let State::Setup {

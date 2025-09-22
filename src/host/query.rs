@@ -2,7 +2,7 @@ use super::*;
 
 pub struct Query;
 
-impl HostQuery for HostState {
+impl HostQuery for WasmHost {
     fn iter(&mut self, __self: Resource<Query>) -> Result<Option<Vec<Resource<Component>>>> {
         bail!("Unimplemented")
     }

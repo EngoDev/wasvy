@@ -2,7 +2,7 @@ use super::*;
 
 pub struct Component;
 
-impl HostComponent for HostState {
+impl HostComponent for WasmHost {
     fn get(&mut self, _self: Resource<Component>) -> Result<SerializedComponent> {
         bail!("Unimplemented")
     }

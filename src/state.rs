@@ -11,7 +11,7 @@ use wasmtime_wasi::{ResourceTable, WasiCtx, WasiCtxBuilder, WasiCtxView, WasiVie
 
 use crate::{asset::ModAsset, send_sync_ptr::SendSyncPtr};
 
-pub(crate) struct HostState {
+pub(crate) struct WasmHost {
     /// The lifetime of a [`wasmtime::Store`] is bound to a 'static lifetime, which is problematic for us
     /// since we want to pass references to system params which have shorter lifetimes.
     ///
@@ -23,7 +23,7 @@ pub(crate) struct HostState {
     ctx: WasiCtx,
 }
 
-impl HostState {
+impl WasmHost {
     pub(crate) fn new() -> Self {
         let table = ResourceTable::new();
         let ctx = WasiCtxBuilder::new()
@@ -91,7 +91,7 @@ impl HostState {
                 table,
             },
             Inner::RunSystem => State::RunSystem,
-            Inner::Uninitialized => panic!("Attempting to get state from unscoped HostState"),
+            Inner::Uninitialized => panic!("Attempting to get state from unscoped WasmHost"),
         };
         f(state)
     }
@@ -133,7 +133,7 @@ pub(crate) struct SetupScope<'s> {
     pub(crate) mod_name: &'s str,
 }
 
-impl WasiView for HostState {
+impl WasiView for WasmHost {
     fn ctx(&mut self) -> WasiCtxView<'_> {
         WasiCtxView {
             ctx: &mut self.ctx,

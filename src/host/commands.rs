@@ -2,7 +2,7 @@ use super::*;
 
 pub struct Commands;
 
-impl HostCommands for HostState {
+impl HostCommands for WasmHost {
     fn spawn(
         &mut self,
         _self: Resource<Commands>,

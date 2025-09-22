@@ -1,6 +1,6 @@
 pub(crate) use crate::{
     bindings::wasvy::ecs::app::*,
-    state::{HostState, State},
+    state::{State, WasmHost},
 };
 pub(crate) use anyhow::bail;
 pub(crate) use wasmtime::{Result, component::Resource};
@@ -17,4 +17,4 @@ pub use component::*;
 pub use query::*;
 pub use system::*;
 
-impl Host for HostState {}
+impl Host for WasmHost {}
