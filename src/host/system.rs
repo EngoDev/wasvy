@@ -50,19 +50,19 @@ impl HostSystem for HostState {
     }
 
     fn add_commands(&mut self, _self: Resource<System>) -> Result<()> {
-        Ok(())
+        bail!("Unimplemented")
     }
 
     fn add_query(&mut self, _self: Resource<System>, _query: Vec<QueryFor>) -> Result<()> {
-        Ok(())
+        bail!("Unimplemented")
     }
 
     fn before(&mut self, _self: Resource<System>, _other: Resource<System>) -> Result<()> {
-        Ok(())
+        bail!("Unimplemented")
     }
 
     fn after(&mut self, _self: Resource<System>, _other: Resource<System>) -> Result<()> {
-        Ok(())
+        bail!("Unimplemented")
     }
 
     fn drop(&mut self, _rep: Resource<System>) -> Result<()> {

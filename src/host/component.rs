@@ -8,7 +8,7 @@ impl HostComponent for HostState {
     }
 
     fn set(&mut self, _self: Resource<Component>, _value: SerializedComponent) -> Result<()> {
-        Ok(())
+        bail!("Unimplemented")
     }
 
     fn drop(&mut self, _rep: Resource<Component>) -> Result<()> {
