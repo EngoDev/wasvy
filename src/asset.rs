@@ -35,13 +35,12 @@ impl ModAsset {
 
     fn call(
         &self,
-        engine: &Engine,
+        runner: &mut Runner,
         config: Config,
         name: &str,
         params: &[Val],
     ) -> Result<Vec<Val>> {
-        let mut runner = Runner::new();
-        runner.use_store(engine, config, move |mut store| {
+        runner.use_store(config, move |mut store| {
             let instance = self
                 .instance_pre
                 .instantiate(&mut store)
@@ -59,8 +58,8 @@ impl ModAsset {
         })
     }
 
-    pub(crate) fn setup(&self, engine: &Engine, config: ConfigSetup<'_>) -> Result<()> {
-        let results = self.call(engine, Config::Setup(config), "setup", &[])?;
+    pub(crate) fn setup(&self, runner: &mut Runner, config: ConfigSetup<'_>) -> Result<()> {
+        let results = self.call(runner, Config::Setup(config), "setup", &[])?;
 
         if !results.is_empty() {
             bail!("Mod setup returned values: {:?}, expected []", results);
@@ -69,8 +68,8 @@ impl ModAsset {
         Ok(())
     }
 
-    pub(crate) fn run_system(&self, engine: &Engine, name: &str) -> Result<Vec<Val>> {
-        self.call(engine, Config::RunSystem, name, &[])
+    pub(crate) fn run_system(&self, runner: &mut Runner, name: &str) -> Result<Vec<Val>> {
+        self.call(runner, Config::RunSystem, name, &[])
     }
 }
 

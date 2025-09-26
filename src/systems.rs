@@ -1,6 +1,11 @@
 use bevy::{ecs::system::SystemChangeTick, prelude::*};
 
-use crate::{asset::ModAsset, engine::Engine, mods::Mod, runner::ConfigSetup};
+use crate::{
+    asset::ModAsset,
+    engine::Engine,
+    mods::Mod,
+    runner::{ConfigSetup, Runner},
+};
 
 pub(crate) fn run_setup(
     tick: SystemChangeTick,
@@ -32,8 +37,9 @@ pub(crate) fn run_setup(
                 let asset_version = tick.this_run();
                 asset.version = asset_version;
 
+                let mut runner = Runner::new(&engine);
                 match asset.setup(
-                    &engine,
+                    &mut runner,
                     ConfigSetup {
                         schedules: &mut schedules,
                         asset_id: &id,

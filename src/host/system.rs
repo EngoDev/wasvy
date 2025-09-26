@@ -1,8 +1,8 @@
-use crate::{asset::ModAsset, engine::Engine};
+use crate::{asset::ModAsset, runner::Runner};
 
 use super::*;
 use bevy::{
-    ecs::system::{BoxedSystem, IntoSystem},
+    ecs::system::{BoxedSystem, IntoSystem, Local},
     prelude::{Assets, Res, info},
 };
 
@@ -27,7 +27,7 @@ impl HostSystem for WasmHost {
         let asset_version = asset_version.clone();
 
         let boxed_system = Box::new(IntoSystem::into_system(
-            move |engine: Res<Engine>, assets: Res<Assets<ModAsset>>| {
+            move |assets: Res<Assets<ModAsset>>, mut runner: Local<Runner>| {
                 // Skip no longer loaded mods
                 let Some(asset) = assets.get(asset_id) else {
                     return;
@@ -39,7 +39,7 @@ impl HostSystem for WasmHost {
                 }
 
                 info!("Running system \"{}\" from \"{}\"", system_name, mod_name);
-                let result = asset.run_system(&engine, &system_name);
+                let result = asset.run_system(&mut runner, &system_name);
                 info!("got result {:?}", result);
             },
         ));

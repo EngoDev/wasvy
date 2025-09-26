@@ -1,6 +1,10 @@
 use bevy::{
     asset::AssetId,
-    ecs::{component::Tick, schedule::Schedules},
+    ecs::{
+        component::Tick,
+        schedule::Schedules,
+        world::{FromWorld, World},
+    },
 };
 use wasmtime_wasi::ResourceTable;
 
@@ -10,25 +14,22 @@ pub(crate) type Store = wasmtime::Store<WasmHost>;
 
 /// Used to contruct a [`Store`] in order to run mods
 pub(crate) struct Runner {
-    host: Option<WasmHost>,
+    store: Store,
 }
 
 impl Runner {
-    pub(crate) fn new() -> Self {
-        Self {
-            host: Some(WasmHost::new()),
-        }
+    pub(crate) fn new(engine: &Engine) -> Self {
+        let host = WasmHost::new();
+        let store = Store::new(&engine, host);
+
+        Self { store }
     }
 
-    pub(crate) fn use_store<'a, F, R>(&mut self, engine: &Engine, config: Config<'a>, mut f: F) -> R
+    pub(crate) fn use_store<'a, F, R>(&mut self, config: Config<'a>, mut f: F) -> R
     where
         F: FnMut(&mut Store) -> R,
     {
-        let Some(mut host) = self.host.take() else {
-            panic!("Cannot re-borrow host for use in another store");
-        };
-
-        host.set_data(match config {
+        self.store.data_mut().set_data(match config {
             Config::Setup(ConfigSetup {
                 schedules,
                 asset_id,
@@ -45,18 +46,19 @@ impl Runner {
             Config::RunSystem => Data::RunSystem,
         });
 
-        let engine = engine.inner();
-        let mut store = Store::new(&engine, host);
-
-        let ret = f(&mut store);
-
-        let mut host = store.into_data();
+        let ret = f(&mut self.store);
 
         // Avoid leaking refs stored in inner scoped to 'a
-        host.set_data(Data::uninitialized());
-        self.host = Some(host);
+        self.store.data_mut().set_data(Data::uninitialized());
 
         ret
+    }
+}
+
+impl FromWorld for Runner {
+    fn from_world(world: &mut World) -> Self {
+        let engine = world.get_resource::<Engine>().unwrap();
+        Runner::new(engine)
     }
 }
 
