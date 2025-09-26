@@ -2,9 +2,9 @@ use bevy::{
     asset::AssetId,
     ecs::{component::Tick, schedule::Schedules},
 };
-use wasmtime_wasi::{ResourceTable, WasiCtx, WasiCtxBuilder, WasiCtxView, WasiView};
+use wasmtime_wasi::ResourceTable;
 
-use crate::{asset::ModAsset, engine::Engine, send_sync_ptr::SendSyncPtr};
+use crate::{asset::ModAsset, engine::Engine, host::WasmHost, send_sync_ptr::SendSyncPtr};
 
 pub(crate) type Store = wasmtime::Store<WasmHost>;
 
@@ -15,20 +15,9 @@ pub(crate) struct Runner {
 
 impl Runner {
     pub(crate) fn new() -> Self {
-        let table = ResourceTable::new();
-        let ctx = WasiCtxBuilder::new()
-            .inherit_stdio()
-            .inherit_network()
-            .allow_ip_name_lookup(true)
-            .build();
-
-        let host = WasmHost {
-            inner: Inner::Uninitialized,
-            table,
-            ctx,
-        };
-
-        Self { host: Some(host) }
+        Self {
+            host: Some(WasmHost::new()),
+        }
     }
 
     pub(crate) fn use_store<'a, F, R>(&mut self, engine: &Engine, config: Config<'a>, mut f: F) -> R
@@ -39,13 +28,13 @@ impl Runner {
             panic!("Cannot re-borrow host for use in another store");
         };
 
-        host.inner = match config {
+        host.set_data(match config {
             Config::Setup(ConfigSetup {
                 schedules,
                 asset_id,
                 asset_version,
                 mod_name,
-            }) => Inner::Setup {
+            }) => Data::Setup {
                 // Erase lifetime of schedules
                 schedules: SendSyncPtr::new(schedules.into()),
                 app_init: false,
@@ -53,8 +42,8 @@ impl Runner {
                 asset_version,
                 mod_name: mod_name.to_string(),
             },
-            Config::RunSystem => Inner::RunSystem,
-        };
+            Config::RunSystem => Data::RunSystem,
+        });
 
         let engine = engine.inner();
         let mut store = Store::new(&engine, host);
@@ -64,20 +53,15 @@ impl Runner {
         let mut host = store.into_data();
 
         // Avoid leaking refs stored in inner scoped to 'a
-        host.inner = Inner::Uninitialized;
+        host.set_data(Data::uninitialized());
         self.host = Some(host);
 
         ret
     }
 }
 
-pub(crate) struct WasmHost {
-    inner: Inner,
-    table: ResourceTable,
-    ctx: WasiCtx,
-}
-
-enum Inner {
+/// Data stored in [`WasmHost`]
+pub(crate) enum Data {
     Uninitialized,
     Setup {
         schedules: SendSyncPtr<Schedules>,
@@ -89,17 +73,23 @@ enum Inner {
     RunSystem,
 }
 
-impl WasmHost {
-    pub(crate) fn access(&mut self) -> State<'_> {
-        let table = &mut self.table;
-        match &mut self.inner {
-            Inner::Setup {
+impl Data {
+    pub(crate) fn uninitialized() -> Self {
+        Self::Uninitialized
+    }
+
+    /// A helper so [`WasmHost`] can expose access to the [`Data`] it stores
+    ///
+    /// The resource table from the host is passed through this for convenience
+    pub(crate) fn access<'a>(&'a mut self, table: &'a mut ResourceTable) -> Option<State<'a>> {
+        match self {
+            Data::Setup {
                 schedules,
                 app_init,
                 asset_id,
                 asset_version,
                 mod_name,
-            } => State::Setup {
+            } => Some(State::Setup {
                 // Safety: Always contains a reference to an initialized value, and borrow_mut ensures this is the only borrow
                 schedules: unsafe { schedules.as_mut() },
                 app_init,
@@ -107,9 +97,9 @@ impl WasmHost {
                 asset_version,
                 mod_name,
                 table,
-            },
-            Inner::RunSystem => State::RunSystem,
-            Inner::Uninitialized => panic!("Attempting to get state from unscoped WasmHost"),
+            }),
+            Data::RunSystem => Some(State::RunSystem),
+            Data::Uninitialized => None,
         }
     }
 }
@@ -136,13 +126,4 @@ pub(crate) struct ConfigSetup<'s> {
     pub(crate) asset_id: &'s AssetId<ModAsset>,
     pub(crate) asset_version: Tick,
     pub(crate) mod_name: &'s str,
-}
-
-impl WasiView for WasmHost {
-    fn ctx(&mut self) -> WasiCtxView<'_> {
-        WasiCtxView {
-            ctx: &mut self.ctx,
-            table: &mut self.table,
-        }
-    }
 }

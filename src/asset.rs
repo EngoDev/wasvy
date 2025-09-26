@@ -8,7 +8,8 @@ use wasmtime::component::{Component, InstancePre, Val};
 
 use crate::{
     engine::Engine,
-    runner::{Config, ConfigSetup, Runner, WasmHost},
+    host::WasmHost,
+    runner::{Config, ConfigSetup, Runner},
 };
 
 /// An asset representing a loaded wasvy Mod
