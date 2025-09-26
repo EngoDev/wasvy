@@ -36,7 +36,6 @@ impl Runner {
                 asset_version,
                 mod_name,
             }) => Data::Setup {
-                // Erase lifetime of schedules
                 schedules: SendSyncPtr::new(schedules.into()),
                 app_init: false,
                 asset_id: *asset_id,
@@ -48,7 +47,8 @@ impl Runner {
 
         let ret = f(&mut self.store);
 
-        // Avoid leaking refs stored in inner scoped to 'a
+        // Avoid storing invalid pointers in WasmHost data (such as ConfigSetup::schedules) which have a lifetime of 'a
+        // If we didn't reset the data before this function returns, Data::access could access an invalid ref
         self.store.data_mut().set_data(Data::uninitialized());
 
         ret
@@ -93,6 +93,7 @@ impl Data {
                 mod_name,
             } => Some(State::Setup {
                 // Safety: Runner::use_store ensures that this always contains a valid reference
+                // See the rules here: https://doc.rust-lang.org/stable/core/ptr/index.html#pointer-to-reference-conversion
                 schedules: unsafe { schedules.as_mut() },
                 app_init,
                 asset_id,
