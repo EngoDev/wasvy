@@ -1,6 +1,6 @@
 pub(crate) use crate::{
     bindings::wasvy::ecs::app::*,
-    state::{State, WasmHost},
+    runner::{State, WasmHost},
 };
 pub(crate) use anyhow::bail;
 pub(crate) use wasmtime::{Result, component::Resource};

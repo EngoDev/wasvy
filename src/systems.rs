@@ -1,5 +1,6 @@
-use crate::{asset::ModAsset, engine::Engine, mods::Mod, state::SetupScope};
 use bevy::{ecs::system::SystemChangeTick, prelude::*};
+
+use crate::{asset::ModAsset, engine::Engine, mods::Mod, runner::ConfigSetup};
 
 pub(crate) fn run_setup(
     tick: SystemChangeTick,
@@ -33,7 +34,7 @@ pub(crate) fn run_setup(
 
                 match asset.setup(
                     &engine,
-                    SetupScope {
+                    ConfigSetup {
                         schedules: &mut schedules,
                         asset_id: &id,
                         asset_version,

@@ -8,7 +8,7 @@ use wasmtime::component::{Component, InstancePre, Val};
 
 use crate::{
     engine::Engine,
-    state::{WasmHost, Scope, SetupScope},
+    runner::{Config, ConfigSetup, Runner, WasmHost},
 };
 
 /// An asset representing a loaded wasvy Mod
@@ -32,8 +32,15 @@ impl ModAsset {
         })
     }
 
-    fn call(&self, engine: &Engine, scope: Scope, name: &str, params: &[Val]) -> Result<Vec<Val>> {
-        engine.use_store(scope, move |mut store| {
+    fn call(
+        &self,
+        engine: &Engine,
+        config: Config,
+        name: &str,
+        params: &[Val],
+    ) -> Result<Vec<Val>> {
+        let mut runner = Runner::new();
+        runner.use_store(engine, config, move |mut store| {
             let instance = self
                 .instance_pre
                 .instantiate(&mut store)
@@ -51,8 +58,8 @@ impl ModAsset {
         })
     }
 
-    pub(crate) fn setup(&self, engine: &Engine, scope: SetupScope<'_>) -> Result<()> {
-        let results = self.call(engine, Scope::Setup(scope), "setup", &[])?;
+    pub(crate) fn setup(&self, engine: &Engine, config: ConfigSetup<'_>) -> Result<()> {
+        let results = self.call(engine, Config::Setup(config), "setup", &[])?;
 
         if !results.is_empty() {
             bail!("Mod setup returned values: {:?}, expected []", results);
@@ -62,7 +69,7 @@ impl ModAsset {
     }
 
     pub(crate) fn run_system(&self, engine: &Engine, name: &str) -> Result<Vec<Val>> {
-        self.call(engine, Scope::RunSystem, name, &[])
+        self.call(engine, Config::RunSystem, name, &[])
     }
 }
 
@@ -76,7 +83,7 @@ impl ModAssetLoader {
         let engine = engine.inner();
 
         let mut linker: wasmtime::component::Linker<WasmHost> =
-            wasmtime::component::Linker::new(&engine);
+            wasmtime::component::Linker::new(engine);
         wasmtime_wasi::p2::add_to_linker_sync(&mut linker).unwrap();
 
         type Data = wasmtime::component::HasSelf<WasmHost>;
