@@ -29,21 +29,21 @@ impl Runner {
     where
         F: FnMut(&mut Store) -> R,
     {
-        self.store.data_mut().set_data(match config {
+        self.store.data_mut().set_data(Data(match config {
             Config::Setup(ConfigSetup {
                 schedules,
                 asset_id,
                 asset_version,
                 mod_name,
-            }) => Data::Setup {
+            }) => Inner::Setup {
                 schedules: SendSyncPtr::new(schedules.into()),
                 app_init: false,
                 asset_id: *asset_id,
                 asset_version,
                 mod_name: mod_name.to_string(),
             },
-            Config::RunSystem => Data::RunSystem,
-        });
+            Config::RunSystem => Inner::RunSystem,
+        }));
 
         let ret = f(&mut self.store);
 
@@ -63,7 +63,9 @@ impl FromWorld for Runner {
 }
 
 /// Data stored in [`WasmHost`]
-pub(crate) enum Data {
+pub(crate) struct Data(Inner);
+
+enum Inner {
     Uninitialized,
     Setup {
         schedules: SendSyncPtr<Schedules>,
@@ -77,15 +79,15 @@ pub(crate) enum Data {
 
 impl Data {
     pub(crate) fn uninitialized() -> Self {
-        Self::Uninitialized
+        Self(Inner::Uninitialized)
     }
 
     /// A helper so [`WasmHost`] can expose access to the [`Data`] it stores
     ///
     /// The resource table from the host is passed through this for convenience
     pub(crate) fn access<'a>(&'a mut self, table: &'a mut ResourceTable) -> Option<State<'a>> {
-        match self {
-            Data::Setup {
+        match &mut self.0 {
+            Inner::Setup {
                 schedules,
                 app_init,
                 asset_id,
@@ -101,8 +103,8 @@ impl Data {
                 mod_name,
                 table,
             }),
-            Data::RunSystem => Some(State::RunSystem),
-            Data::Uninitialized => None,
+            Inner::RunSystem => Some(State::RunSystem),
+            Inner::Uninitialized => None,
         }
     }
 }
