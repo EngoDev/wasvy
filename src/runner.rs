@@ -92,7 +92,7 @@ impl Data {
                 asset_version,
                 mod_name,
             } => Some(State::Setup {
-                // Safety: Always contains a reference to an initialized value, and borrow_mut ensures this is the only borrow
+                // Safety: Runner::use_store ensures that this always contains a valid reference
                 schedules: unsafe { schedules.as_mut() },
                 app_init,
                 asset_id,
