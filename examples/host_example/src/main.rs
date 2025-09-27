@@ -12,9 +12,7 @@ fn main() {
             // Next, add the [`ModloaderPlugin`] ;)
             ModloaderPlugin,
             // Plus some helpers for the example
-            EguiPlugin {
-                enable_multipass_for_primary_context: true,
-            },
+            EguiPlugin,
             WorldInspectorPlugin::new(),
         ))
         .add_systems(Startup, startup)
