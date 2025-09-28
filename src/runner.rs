@@ -1,11 +1,14 @@
+use std::ptr::NonNull;
+
 use bevy::{
     asset::AssetId,
     ecs::{
         component::Tick,
-        schedule::Schedules,
+        system::Commands,
         world::{FromWorld, World},
     },
 };
+use wasmtime::component::Instance;
 use wasmtime_wasi::ResourceTable;
 
 use crate::{asset::ModAsset, engine::Engine, host::WasmHost, send_sync_ptr::SendSyncPtr};
@@ -25,31 +28,33 @@ impl Runner {
         Self { store }
     }
 
-    pub(crate) fn use_store<'a, F, R>(&mut self, config: Config<'a>, mut f: F) -> R
+    pub(crate) fn use_store<'a, 'w, 's, F, R>(&mut self, config: Config<'a, 'w, 's>, mut f: F) -> R
     where
         F: FnMut(&mut Store) -> R,
     {
         self.store.data_mut().set_data(Data(match config {
             Config::Setup(ConfigSetup {
-                schedules,
+                world,
                 asset_id,
                 asset_version,
                 mod_name,
             }) => Inner::Setup {
-                schedules: SendSyncPtr::new(schedules.into()),
+                world: SendSyncPtr::new(world.into()),
                 app_init: false,
                 asset_id: *asset_id,
                 asset_version,
                 mod_name: mod_name.to_string(),
             },
-            Config::RunSystem => Inner::RunSystem,
+            Config::RunSystem(ConfigRunSystem { commands }) => Inner::RunSystem {
+                commands: SendSyncPtr::new(NonNull::new(commands).unwrap().cast()),
+            },
         }));
 
         let ret = f(&mut self.store);
 
         // Avoid storing invalid pointers in WasmHost data (such as ConfigSetup::schedules) which have a lifetime of 'a
         // If we didn't reset the data before this function returns, Data::access could access an invalid ref
-        self.store.data_mut().set_data(Data::uninitialized());
+        self.store.data_mut().clear();
 
         ret
     }
@@ -61,13 +66,15 @@ pub(crate) struct Data(Inner);
 enum Inner {
     Uninitialized,
     Setup {
-        schedules: SendSyncPtr<Schedules>,
+        world: SendSyncPtr<World>,
         app_init: bool,
         mod_name: String,
         asset_id: AssetId<ModAsset>,
         asset_version: Tick,
     },
-    RunSystem,
+    RunSystem {
+        commands: SendSyncPtr<Commands<'static, 'static>>,
+    },
 }
 
 impl Data {
@@ -81,7 +88,7 @@ impl Data {
     pub(crate) fn access<'a>(&'a mut self, table: &'a mut ResourceTable) -> Option<State<'a>> {
         match &mut self.0 {
             Inner::Setup {
-                schedules,
+                world,
                 app_init,
                 asset_id,
                 asset_version,
@@ -89,39 +96,49 @@ impl Data {
             } => Some(State::Setup {
                 // Safety: Runner::use_store ensures that this always contains a valid reference
                 // See the rules here: https://doc.rust-lang.org/stable/core/ptr/index.html#pointer-to-reference-conversion
-                schedules: unsafe { schedules.as_mut() },
+                world: unsafe { world.as_mut() },
                 app_init,
                 asset_id,
                 asset_version,
                 mod_name,
                 table,
             }),
-            Inner::RunSystem => Some(State::RunSystem),
+            Inner::RunSystem { commands } => Some(State::RunSystem {
+                // Safety: Runner::use_store ensures that this always contains a valid reference
+                // See the rules here: https://doc.rust-lang.org/stable/core/ptr/index.html#pointer-to-reference-conversion
+                commands: unsafe { commands.cast().as_mut() },
+            }),
             Inner::Uninitialized => None,
         }
     }
 }
 
-pub(crate) enum State<'s> {
+pub(crate) enum State<'a> {
     Setup {
-        schedules: &'s mut Schedules,
-        table: &'s mut ResourceTable,
-        app_init: &'s mut bool,
-        mod_name: &'s str,
-        asset_id: &'s AssetId<ModAsset>,
-        asset_version: &'s Tick,
+        world: &'a mut World,
+        table: &'a mut ResourceTable,
+        app_init: &'a mut bool,
+        mod_name: &'a str,
+        asset_id: &'a AssetId<ModAsset>,
+        asset_version: &'a Tick,
     },
-    RunSystem,
+    RunSystem {
+        commands: &'a mut Commands<'a, 'a>,
+    },
 }
 
-pub(crate) enum Config<'s> {
-    Setup(ConfigSetup<'s>),
-    RunSystem,
+pub(crate) enum Config<'a, 'w, 's> {
+    Setup(ConfigSetup<'a>),
+    RunSystem(ConfigRunSystem<'a, 'w, 's>),
 }
 
-pub(crate) struct ConfigSetup<'s> {
-    pub(crate) schedules: &'s mut Schedules,
-    pub(crate) asset_id: &'s AssetId<ModAsset>,
+pub(crate) struct ConfigSetup<'a> {
+    pub(crate) world: &'a mut World,
+    pub(crate) asset_id: &'a AssetId<ModAsset>,
     pub(crate) asset_version: Tick,
-    pub(crate) mod_name: &'s str,
+    pub(crate) mod_name: &'a str,
+}
+
+pub(crate) struct ConfigRunSystem<'a, 'w, 's> {
+    pub(crate) commands: &'a mut Commands<'w, 's>,
 }

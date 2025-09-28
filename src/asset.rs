@@ -1,22 +1,32 @@
+use std::mem::replace;
+
 use anyhow::{Context, Result, anyhow, bail};
 use bevy::{
-    asset::{Asset, AssetLoader, LoadContext, io::Reader},
-    ecs::component::Tick,
+    asset::{Asset, AssetId, AssetLoader, LoadContext, io::Reader},
+    ecs::{component::Tick, world::World},
     reflect::TypePath,
 };
 use wasmtime::component::{Component, InstancePre, Val};
 
 use crate::{
-    engine::Linker,
+    engine::{Engine, Linker},
     host::WasmHost,
-    runner::{Config, ConfigSetup, Runner},
+    runner::{Config, ConfigRunSystem, ConfigSetup, Runner},
 };
 
 /// An asset representing a loaded wasvy Mod
 #[derive(Asset, TypePath)]
-pub struct ModAsset {
-    pub(crate) version: Tick,
-    instance_pre: InstancePre<WasmHost>,
+pub struct ModAsset(Inner);
+
+enum Inner {
+    Placeholder,
+    Loaded {
+        instance_pre: InstancePre<WasmHost>,
+    },
+    Ready {
+        version: Tick,
+        instance_pre: InstancePre<WasmHost>,
+    },
 }
 
 const SETUP: &'static str = "setup";
@@ -29,50 +39,99 @@ impl ModAsset {
         let component = Component::from_binary(&loader.linker.engine(), &bytes)?;
         let instance_pre = loader.linker.instantiate_pre(&component)?;
 
-        Ok(Self {
-            version: Tick::MAX,
-            instance_pre,
-        })
+        Ok(Self(Inner::Loaded { instance_pre }))
     }
 
-    fn call(
-        &self,
-        runner: &mut Runner,
-        config: Config,
-        name: &str,
-        params: &[Val],
-    ) -> Result<Vec<Val>> {
-        runner.use_store(config, move |mut store| {
-            let instance = self
-                .instance_pre
-                .instantiate(&mut store)
-                .context("Failed to instantiate component")?;
-
-            let func = instance
-                .get_func(&mut store, name)
-                .ok_or(anyhow!("Missing {} function", name))?;
-
-            let mut results = vec![];
-            func.call(&mut store, params, &mut results)
-                .expect("failed to run the desired function");
-
-            Ok(results)
-        })
+    pub(crate) fn version(&self) -> Option<Tick> {
+        match &self.0 {
+            Inner::Ready { version, .. } => Some(version.clone()),
+            _ => None,
+        }
     }
 
-    pub(crate) fn setup(&self, runner: &mut Runner, config: ConfigSetup<'_>) -> Result<()> {
-        let results = self.call(runner, Config::Setup(config), SETUP, &[])?;
+    /// Take this asset and leave a placeholder behind
+    pub(crate) fn take(&mut self) -> Self {
+        replace(self, Self(Inner::Placeholder))
+    }
+
+    /// Take this asset and leave a placeholder behind
+    pub(crate) fn put(&mut self, value: Self) {
+        replace(self, value);
+    }
+
+    pub(crate) fn setup(
+        self,
+        world: &mut World,
+        asset_id: &AssetId<ModAsset>,
+        mod_name: &str,
+    ) -> Result<Self> {
+        let Inner::Loaded { instance_pre } = self.0 else {
+            bail!("Mod is not in Loaded state");
+        };
+
+        let version = world.change_tick();
+
+        let engine = world.get_resource::<Engine>().unwrap();
+        let mut runner = Runner::new(&engine);
+        let results = call(
+            &mut runner,
+            &instance_pre,
+            Config::Setup(ConfigSetup {
+                world,
+                asset_id: &asset_id,
+                asset_version: version,
+                mod_name,
+            }),
+            SETUP,
+            &[],
+        )?;
 
         if !results.is_empty() {
             bail!("Mod setup returned values: {:?}, expected []", results);
         }
 
-        Ok(())
+        Ok(Self(Inner::Ready {
+            version,
+            instance_pre,
+        }))
     }
 
-    pub(crate) fn run_system(&self, runner: &mut Runner, name: &str) -> Result<Vec<Val>> {
-        self.call(runner, Config::RunSystem, name, &[])
+    pub(crate) fn run_system<'a, 'w, 's>(
+        &self,
+        runner: &mut Runner,
+        name: &str,
+        config: ConfigRunSystem<'a, 'w, 's>,
+    ) -> Result<Vec<Val>> {
+        let Inner::Ready { instance_pre, .. } = &self.0 else {
+            bail!("Mod is not in Ready state");
+        };
+
+        call(runner, instance_pre, Config::RunSystem(config), name, &[])
     }
+}
+
+fn call(
+    runner: &mut Runner,
+    instance_pre: &InstancePre<WasmHost>,
+    config: Config,
+    name: &str,
+    params: &[Val],
+) -> Result<Vec<Val>> {
+    runner.use_store(config, move |mut store| {
+        let instance = instance_pre
+            .instantiate(&mut store)
+            .context("Failed to instantiate component")?;
+
+        let func = instance
+            .get_func(&mut store, name)
+            .ok_or(anyhow!("Missing {} function", name))?;
+
+        let mut results = vec![];
+        func.call(&mut store, params, &mut results)
+            .expect("failed to run the desired function");
+
+        Ok(results)
+    })
 }
 
 /// The bevy [`AssetLoader`] for [`ModAsset`]

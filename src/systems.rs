@@ -1,60 +1,64 @@
-use bevy::{ecs::system::SystemChangeTick, prelude::*};
-
-use crate::{
-    asset::ModAsset,
-    engine::Engine,
-    mods::Mod,
-    runner::{ConfigSetup, Runner},
+use bevy::{
+    ecs::system::{SystemParam, SystemState},
+    prelude::*,
 };
 
-pub(crate) fn run_setup(
-    tick: SystemChangeTick,
-    mut events: MessageReader<AssetEvent<ModAsset>>,
-    mut assets: ResMut<Assets<ModAsset>>,
-    mut schedules: ResMut<Schedules>,
-    engine: Res<Engine>,
-    mut commands: Commands,
-    mods: Query<(Entity, Option<&Name>, &Mod)>,
-) {
+use crate::{asset::ModAsset, mods::Mod};
+
+/// Group all the system params we neeed to allow shared access from one &mut world
+#[derive(SystemParam)]
+pub struct Setup<'w, 's> {
+    events: MessageReader<'w, 's, AssetEvent<ModAsset>>,
+    assets: ResMut<'w, Assets<ModAsset>>,
+    mods: Query<'w, 's, (Entity, Option<&'static Name>, &'static Mod)>,
+}
+
+pub(crate) fn run_setup(mut world: &mut World, param: &mut SystemState<Setup>) {
+    let Setup {
+        mut events,
+        mut assets,
+        mods,
+    } = param.get_mut(world);
+
+    let mut setup = Vec::new();
     for event in events.read() {
-        match event {
-            AssetEvent::LoadedWithDependencies { id } => {
-                let asset = assets.get_mut(*id).unwrap();
+        if let AssetEvent::LoadedWithDependencies { id } = event {
+            let asset = assets.get_mut_untracked(*id).unwrap().take();
 
-                // Find the mod entity matching this asset
-                let Some((entity, name, _)) = mods.iter().find(|&(_, _, m)| m.asset.id() == *id)
-                else {
-                    warn!(
-                        "Loaded wasm mod, but missing it's entity. Did you accidentally load a wasm asset?"
-                    );
-                    continue;
-                };
+            // Find the mod entity matching this asset
+            let Some((entity, name, _)) = mods.iter().find(|&(_, _, m)| m.asset.id() == *id) else {
+                warn!(
+                    "Loaded wasm mod asset, but missing it's entity. Did you accidentally load a wasm asset?"
+                );
+                continue;
+            };
 
-                let name = name
-                    .and_then(|name| Some(name.as_str()))
-                    .unwrap_or("unknown");
+            let name = name
+                .and_then(|name| Some(name.as_str()))
+                .unwrap_or("unknown")
+                .to_string();
 
-                let asset_version = tick.this_run();
-                asset.version = asset_version;
+            setup.push((asset, *id, entity, name));
+        }
+    }
 
-                let mut runner = Runner::new(&engine);
-                match asset.setup(
-                    &mut runner,
-                    ConfigSetup {
-                        schedules: &mut schedules,
-                        asset_id: &id,
-                        asset_version,
-                        mod_name: &name,
-                    },
-                ) {
-                    Ok(()) => info!("Successfully loaded mod \"{}\"", name),
-                    Err(err) => {
-                        commands.entity(entity).despawn();
-                        error!("Error loading mod \"{}\":\n{:?}", name, err)
-                    }
-                }
+    for (asset, asset_id, entity, name) in setup {
+        let result = asset.setup(&mut world, &asset_id, &name);
+
+        let mut assets = world.get_resource_mut::<Assets<ModAsset>>().unwrap();
+        match result {
+            Ok(asset) => {
+                info!("Successfully loaded mod \"{}\"", name);
+
+                assets.get_mut(asset_id).unwrap().put(asset);
             }
-            _ => {}
+            Err(err) => {
+                error!("Error loading mod \"{}\":\n{:?}", name, err);
+
+                assets.remove(asset_id);
+                drop(assets);
+                world.despawn(entity);
+            }
         }
     }
 }
