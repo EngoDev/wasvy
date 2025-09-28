@@ -54,7 +54,7 @@ impl ModAsset {
         replace(self, Self(Inner::Placeholder))
     }
 
-    /// Take this asset and leave a placeholder behind
+    /// Replace this asset with another
     pub(crate) fn put(&mut self, value: Self) {
         let _ = replace(self, value);
     }
