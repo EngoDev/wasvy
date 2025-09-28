@@ -11,6 +11,7 @@ use bevy::{
     asset::AssetId,
     ecs::{
         component::Tick,
+        error::Result as BevyResult,
         reflect::AppTypeRegistry,
         system::{
             BoxedSystem, Commands, IntoSystem, Local, LocalBuilder, ParamBuilder,
@@ -87,28 +88,26 @@ fn system_runner(
     mut commands: Commands,
     // TODO: mut resources: FilteredResourcesMut,
     // TODO: mut query: Query<FilteredEntityMut>,
-) {
+) -> BevyResult {
     // Skip no longer loaded mods
     let Some(asset) = assets.get(input.asset_id) else {
-        return;
+        return Ok(());
     };
 
     // Skip mismatching system versions
     if asset.version() != Some(input.asset_version) {
-        return;
+        return Ok(());
     }
 
     let mut runner = Runner::new(&engine);
 
     // Setup system param resources
-    let params: Vec<_> = input
-        .params
-        .iter()
-        .map(|param| match param {
-            Param::Commands => runner.new_resource(Commands),
-        })
-        .map(|resource| Val::Resource(resource))
-        .collect();
+    let mut params = Vec::with_capacity(input.params.len());
+    for param in input.params.iter() {
+        params.push(Val::Resource(match param {
+            Param::Commands => runner.new_resource(Commands)?,
+        }));
+    }
 
     trace!(
         "Running system \"{}\" from \"{}\"",
@@ -122,8 +121,10 @@ fn system_runner(
             type_registry: &type_registry,
         },
         &params,
-    );
+    )?;
     trace!("got result {:?}", result);
+
+    Ok(())
 }
 
 impl HostSystem for WasmHost {

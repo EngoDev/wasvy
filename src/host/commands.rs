@@ -31,7 +31,7 @@ impl HostCommands for WasmHost {
                 entity,
                 type_path,
                 serialized_component,
-            );
+            )?;
         }
 
         Ok(())

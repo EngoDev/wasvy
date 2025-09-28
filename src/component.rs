@@ -1,5 +1,6 @@
 use std::alloc::Layout;
 
+use anyhow::Result;
 use bevy::{
     ecs::{
         component::{ComponentDescriptor, ComponentId},
@@ -87,14 +88,14 @@ pub(crate) fn insert_component(
     entity: Entity,
     type_path: String,
     serialized_value: String,
-) {
+) -> Result<()> {
     let type_registry = type_registry.read();
 
     // Insert types that are known by bevy (inserted as concrete types)
     if let Some(type_registration) = type_registry.get_with_type_path(&type_path) {
         let mut de = serde_json::Deserializer::from_str(&serialized_value);
         let reflect_deserializer = TypedReflectDeserializer::new(type_registration, &type_registry);
-        let output: Box<dyn PartialReflect> = reflect_deserializer.deserialize(&mut de).unwrap();
+        let output: Box<dyn PartialReflect> = reflect_deserializer.deserialize(&mut de)?;
 
         commands.entity(entity).insert_reflect(output);
     }
@@ -106,4 +107,6 @@ pub(crate) fn insert_component(
             type_path,
         });
     }
+
+    Ok(())
 }

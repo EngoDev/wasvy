@@ -1,5 +1,6 @@
 use std::ptr::NonNull;
 
+use anyhow::Result;
 use bevy::{
     asset::AssetId,
     ecs::{component::Tick, reflect::AppTypeRegistry, system::Commands, world::World},
@@ -28,12 +29,12 @@ impl Runner {
         self.store.data_mut().table()
     }
 
-    pub(crate) fn new_resource<T>(&mut self, entry: T) -> ResourceAny
+    pub(crate) fn new_resource<T>(&mut self, entry: T) -> Result<ResourceAny>
     where
         T: Send + 'static,
     {
-        let resource = self.table().push(entry).unwrap();
-        resource.try_into_resource_any(&mut self.store).unwrap()
+        let resource = self.table().push(entry)?;
+        Ok(resource.try_into_resource_any(&mut self.store).unwrap())
     }
 
     pub(crate) fn use_store<'a, 'w, 's, F, R>(&mut self, config: Config<'a, 'w, 's>, mut f: F) -> R
