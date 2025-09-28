@@ -135,7 +135,7 @@ fn call(
 
         let mut results = vec![];
         func.call(&mut store, params, &mut results)
-            .expect("failed to run the desired function");
+            .context("Failed to run the desired wasm function")?;
 
         Ok(results)
     })
