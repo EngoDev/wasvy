@@ -20,7 +20,7 @@ pub use system::*;
 
 use wasmtime_wasi::{ResourceTable, WasiCtx, WasiCtxBuilder, WasiCtxView, WasiView};
 
-pub(crate) struct WasmHost {
+pub struct WasmHost {
     data: Data,
     table: ResourceTable,
     ctx: WasiCtx,

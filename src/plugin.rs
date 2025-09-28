@@ -1,7 +1,9 @@
+use std::sync::Mutex;
+
 use crate::{
     asset::{ModAsset, ModAssetLoader},
     component_registry::WasmComponentRegistry,
-    engine::Engine,
+    engine::{Engine, Linker, create_linker},
     systems::run_setup,
 };
 use bevy::prelude::*;
@@ -11,20 +13,46 @@ use bevy::prelude::*;
 /// ```rust
 ///  App::new()
 ///    .add_plugins(DefaultPlugins)
-///    .add_plugins(ModloaderPlugin)
+///    .add_plugins(ModloaderPlugin::default())
 ///    // etc
 /// ```
 ///
 /// Looking for next steps? See: [`Mods`](crate::mods::Mods)
 /// ```
-pub struct ModloaderPlugin;
+pub struct ModloaderPlugin(Mutex<Option<Inner>>);
+
+struct Inner {
+    engine: Engine,
+    linker: Linker,
+}
+
+impl Default for ModloaderPlugin {
+    fn default() -> Self {
+        let engine = Engine::new();
+        let linker = create_linker(&engine);
+        let inner = Inner { engine, linker };
+        ModloaderPlugin(Mutex::new(Some(inner)))
+    }
+}
+
+impl ModloaderPlugin {
+    /// Use this function to add custom functionality that will be passed to the WASM module.
+    pub fn add_functionality<F>(mut self, mut f: F) -> Self
+    where
+        F: FnMut(&mut Linker),
+    {
+        let inner = self.0.get_mut().unwrap().as_mut().unwrap();
+        f(&mut inner.linker);
+        self
+    }
+}
 
 impl Plugin for ModloaderPlugin {
     fn build(&self, app: &mut App) {
-        let engine = Engine::new();
+        let Inner { engine, linker } = self.0.lock().unwrap().take().unwrap();
 
         app.init_asset::<ModAsset>()
-            .register_asset_loader(ModAssetLoader::new(&engine));
+            .register_asset_loader(ModAssetLoader { linker });
 
         app.insert_resource(engine)
             .init_resource::<WasmComponentRegistry>();

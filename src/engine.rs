@@ -1,5 +1,7 @@
 use bevy::prelude::*;
 
+use crate::host::WasmHost;
+
 /// Cross engine instatiation of WASM components is not supported.
 /// This resources is the global [`Engine`](wasmtime::Engine) that is used for instatiation.
 ///
@@ -16,4 +18,18 @@ impl Engine {
     pub(crate) fn inner(&self) -> &wasmtime::Engine {
         &self.0
     }
+}
+
+pub type Linker = wasmtime::component::Linker<WasmHost>;
+
+pub(crate) fn create_linker(engine: &Engine) -> Linker {
+    let engine = engine.inner();
+
+    let mut linker = Linker::new(engine);
+    wasmtime_wasi::p2::add_to_linker_sync(&mut linker).unwrap();
+
+    type Data = wasmtime::component::HasSelf<WasmHost>;
+    crate::bindings::wasvy::ecs::app::add_to_linker::<_, Data>(&mut linker, |state| state).unwrap();
+
+    linker
 }

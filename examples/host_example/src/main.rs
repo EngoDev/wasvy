@@ -9,7 +9,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugins((
             // Next, add the [`ModloaderPlugin`] ;)
-            ModloaderPlugin,
+            ModloaderPlugin::default(),
         ))
         .add_systems(Startup, startup)
         .run();
