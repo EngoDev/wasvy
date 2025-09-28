@@ -7,10 +7,13 @@ mod bindings {
         }
     });
 }
+use bevy_math::Vec3;
+use bevy_transform::components::Transform;
 use bindings::{
     wasvy::ecs::app::{App, Schedule, System},
     *,
 };
+use serde::{Deserialize, Serialize};
 
 struct GuestComponent;
 
@@ -27,7 +30,25 @@ impl Guest for GuestComponent {
 
     fn my_system(commands: Commands) -> () {
         println!("Running my-system");
-        commands.spawn(&[]);
+
+        #[derive(Serialize, Deserialize)]
+        struct MyStruct {
+            value: i32,
+        }
+
+        let component_1 = MyStruct { value: 123 };
+        let component_2 = Transform::IDENTITY.looking_at(Vec3::ONE, Vec3::Y);
+
+        let component_1_json = serde_json::to_string(&component_1).unwrap();
+        let component_2_json = serde_json::to_string(&component_2).unwrap();
+
+        commands.spawn(&[
+            ("simple::MyStruct".to_string(), component_1_json),
+            (
+                "bevy_transform::components::transform::Transform".to_string(),
+                component_2_json,
+            ),
+        ]);
     }
 }
 

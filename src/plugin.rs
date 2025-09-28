@@ -2,7 +2,7 @@ use std::sync::Mutex;
 
 use crate::{
     asset::{ModAsset, ModAssetLoader},
-    component_registry::WasmComponentRegistry,
+    component::WasmComponentRegistry,
     engine::{Engine, Linker, create_linker},
     systems::run_setup,
 };
@@ -52,12 +52,10 @@ impl Plugin for ModloaderPlugin {
         let Inner { engine, linker } = self.0.lock().unwrap().take().unwrap();
 
         app.init_asset::<ModAsset>()
-            .register_asset_loader(ModAssetLoader { linker });
-
-        app.insert_resource(engine)
-            .init_resource::<WasmComponentRegistry>();
-
-        app.add_systems(PreUpdate, run_setup);
+            .register_asset_loader(ModAssetLoader { linker })
+            .insert_resource(engine)
+            .init_resource::<WasmComponentRegistry>()
+            .add_systems(PreUpdate, run_setup);
 
         let asset_plugins = app.get_added_plugins::<AssetPlugin>();
         let asset_plugin = asset_plugins
