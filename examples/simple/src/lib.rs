@@ -1,6 +1,6 @@
 mod bindings {
     wit_bindgen::generate!({
-        path: ["../../wit/ecs", "./wit"],
+        path: ["./wit"],
         world: "component:simple/example",
         with: {
             "wasvy:ecs/app": generate,
