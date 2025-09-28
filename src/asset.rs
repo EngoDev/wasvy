@@ -19,6 +19,8 @@ pub struct ModAsset {
     instance_pre: InstancePre<WasmHost>,
 }
 
+const SETUP: &'static str = "setup";
+
 impl ModAsset {
     pub(crate) async fn new(loader: &ModAssetLoader, reader: &mut dyn Reader) -> Result<Self> {
         let mut bytes = vec![];
@@ -59,7 +61,7 @@ impl ModAsset {
     }
 
     pub(crate) fn setup(&self, runner: &mut Runner, config: ConfigSetup<'_>) -> Result<()> {
-        let results = self.call(runner, Config::Setup(config), "setup", &[])?;
+        let results = self.call(runner, Config::Setup(config), SETUP, &[])?;
 
         if !results.is_empty() {
             bail!("Mod setup returned values: {:?}, expected []", results);
