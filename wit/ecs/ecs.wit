@@ -60,7 +60,7 @@ interface app {
 
 	/// A commands system param
 	resource commands {
-		spawn: func(components: list<component>);
+		spawn: func(components: list<serialized-component>);
 		// etc
 	}
 

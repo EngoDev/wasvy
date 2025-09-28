@@ -1,5 +1,4 @@
 use super::*;
-use anyhow::anyhow;
 use bevy::{ecs::schedule::Schedules, prelude::Update};
 
 pub struct App;
@@ -29,23 +28,27 @@ impl HostApp for WasmHost {
         schedule: Schedule,
         systems: Vec<Resource<System>>,
     ) -> Result<()> {
-        let State::Setup { table, world, .. } = self.access() else {
+        let State::Setup {
+            table,
+            world,
+            mod_name,
+            asset_id,
+            asset_version,
+            ..
+        } = self.access()
+        else {
             unreachable!()
         };
 
-        let mut schedules = world.get_resource_mut::<Schedules>().unwrap();
-
         for system in systems.iter() {
             let system = table.get_mut(system)?;
-            let boxed_system = system
-                .0
-                .take()
-                .ok_or(anyhow!("System was already added to the app"))?;
+            let boxed_system = system.build(world, mod_name, asset_id, asset_version)?;
 
             let schedule = match schedule {
                 Schedule::Update => Update,
             };
 
+            let mut schedules = world.get_resource_mut::<Schedules>().unwrap();
             schedules.add_systems(schedule, boxed_system);
         }
 

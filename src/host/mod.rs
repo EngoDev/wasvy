@@ -1,5 +1,8 @@
 pub(crate) use anyhow::bail;
-pub(crate) use wasmtime::{Result, component::Resource};
+pub(crate) use wasmtime::{
+    Result,
+    component::{Resource, Val},
+};
 
 pub(crate) use crate::{
     bindings::wasvy::ecs::app::*,
@@ -41,6 +44,10 @@ impl WasmHost {
 
     pub(crate) fn set_data(&mut self, data: Data) {
         self.data = data;
+    }
+
+    pub(crate) fn table(&mut self) -> &mut ResourceTable {
+        &mut self.table
     }
 
     pub(crate) fn clear(&mut self) {

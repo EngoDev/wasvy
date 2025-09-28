@@ -18,14 +18,16 @@ impl Guest for GuestComponent {
     fn setup() {
         // Define a new system that queries for entities with a Transform and a Marker component
         let my_system = System::new("my-system");
+        my_system.add_commands();
 
         // Register the system to run in the Update schedule
         let app = App::new();
         app.add_systems(Schedule::Update, vec![my_system]);
     }
 
-    fn my_system() -> () {
+    fn my_system(commands: Commands) -> () {
         println!("Running my-system");
+        commands.spawn(&[]);
     }
 }
 

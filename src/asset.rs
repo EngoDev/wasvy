@@ -56,7 +56,7 @@ impl ModAsset {
 
     /// Take this asset and leave a placeholder behind
     pub(crate) fn put(&mut self, value: Self) {
-        replace(self, value);
+        let _ = replace(self, value);
     }
 
     pub(crate) fn setup(
@@ -101,12 +101,19 @@ impl ModAsset {
         runner: &mut Runner,
         name: &str,
         config: ConfigRunSystem<'a, 'w, 's>,
+        params: &[Val],
     ) -> Result<Vec<Val>> {
         let Inner::Ready { instance_pre, .. } = &self.0 else {
             bail!("Mod is not in Ready state");
         };
 
-        call(runner, instance_pre, Config::RunSystem(config), name, &[])
+        call(
+            runner,
+            instance_pre,
+            Config::RunSystem(config),
+            name,
+            params,
+        )
     }
 }
 

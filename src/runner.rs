@@ -2,13 +2,9 @@ use std::ptr::NonNull;
 
 use bevy::{
     asset::AssetId,
-    ecs::{
-        component::Tick,
-        system::Commands,
-        world::{FromWorld, World},
-    },
+    ecs::{component::Tick, system::Commands, world::World},
 };
-use wasmtime::component::Instance;
+use wasmtime::component::ResourceAny;
 use wasmtime_wasi::ResourceTable;
 
 use crate::{asset::ModAsset, engine::Engine, host::WasmHost, send_sync_ptr::SendSyncPtr};
@@ -26,6 +22,18 @@ impl Runner {
         let store = Store::new(&engine, host);
 
         Self { store }
+    }
+
+    pub fn table(&mut self) -> &mut ResourceTable {
+        self.store.data_mut().table()
+    }
+
+    pub(crate) fn new_resource<T>(&mut self, entry: T) -> ResourceAny
+    where
+        T: Send + 'static,
+    {
+        let resource = self.table().push(entry).unwrap();
+        resource.try_into_resource_any(&mut self.store).unwrap()
     }
 
     pub(crate) fn use_store<'a, 'w, 's, F, R>(&mut self, config: Config<'a, 'w, 's>, mut f: F) -> R
