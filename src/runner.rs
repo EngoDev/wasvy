@@ -55,13 +55,6 @@ impl Runner {
     }
 }
 
-impl FromWorld for Runner {
-    fn from_world(world: &mut World) -> Self {
-        let engine = world.get_resource::<Engine>().unwrap();
-        Runner::new(engine)
-    }
-}
-
 /// Data stored in [`WasmHost`]
 pub(crate) struct Data(Inner);
 
