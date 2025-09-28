@@ -7,10 +7,7 @@ use bevy::{
 use wasmtime::component::ResourceAny;
 use wasmtime_wasi::ResourceTable;
 
-use crate::{
-    asset::ModAsset, component::WasmComponentRegistry, engine::Engine, host::WasmHost,
-    send_sync_ptr::SendSyncPtr,
-};
+use crate::{asset::ModAsset, engine::Engine, host::WasmHost, send_sync_ptr::SendSyncPtr};
 
 pub(crate) type Store = wasmtime::Store<WasmHost>;
 
@@ -59,11 +56,9 @@ impl Runner {
             Config::RunSystem(ConfigRunSystem {
                 commands,
                 type_registry,
-                component_registry,
             }) => Inner::RunSystem {
                 commands: SendSyncPtr::new(NonNull::from_mut(commands).cast()),
-                type_registry: type_registry.clone(),
-                component_registry: SendSyncPtr::new(NonNull::from_ref(component_registry)),
+                type_registry: SendSyncPtr::new(NonNull::from_ref(type_registry)),
             },
         }));
 
@@ -91,8 +86,7 @@ enum Inner {
     },
     RunSystem {
         commands: SendSyncPtr<Commands<'static, 'static>>,
-        type_registry: AppTypeRegistry,
-        component_registry: SendSyncPtr<WasmComponentRegistry>,
+        type_registry: SendSyncPtr<AppTypeRegistry>,
     },
 }
 
@@ -125,18 +119,15 @@ impl Data {
             Inner::RunSystem {
                 commands,
                 type_registry,
-                component_registry,
-            } => {
-                // Safety: Runner::use_store ensures that this always contains a valid reference
-                // See the rules here: https://doc.rust-lang.org/stable/core/ptr/index.html#pointer-to-reference-conversion
-                unsafe {
-                    Some(State::RunSystem {
-                        commands: commands.cast().as_mut(),
-                        type_registry,
-                        component_registry: component_registry.cast().as_ref(),
-                    })
-                }
-            }
+            } =>
+            // Safety: Runner::use_store ensures that this always contains a valid reference
+            // See the rules here: https://doc.rust-lang.org/stable/core/ptr/index.html#pointer-to-reference-conversion
+            unsafe {
+                Some(State::RunSystem {
+                    commands: commands.cast().as_mut(),
+                    type_registry: type_registry.as_ref(),
+                })
+            },
             Inner::Uninitialized => None,
         }
     }
@@ -154,7 +145,6 @@ pub(crate) enum State<'a> {
     RunSystem {
         commands: &'a mut Commands<'a, 'a>,
         type_registry: &'a AppTypeRegistry,
-        component_registry: &'a WasmComponentRegistry,
     },
 }
 
@@ -173,5 +163,4 @@ pub(crate) struct ConfigSetup<'a> {
 pub(crate) struct ConfigRunSystem<'a, 'w, 's> {
     pub(crate) commands: &'a mut Commands<'w, 's>,
     pub(crate) type_registry: &'a AppTypeRegistry,
-    pub(crate) component_registry: &'a WasmComponentRegistry,
 }

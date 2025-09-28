@@ -31,20 +31,18 @@ pub struct WasmComponent {
     pub serialized_value: String,
 }
 
-/// A command that registers and adds a component to an entity
-struct RegisterWasmComponent {
+/// A command that inserts a guest defined component into an entity
+///
+/// It also registers the component if it hasn't been yet
+struct InsertWasmComponent {
+    component: WasmComponent,
     entity: Entity,
-    serialized_value: String,
     type_path: String,
 }
 
-impl Command for RegisterWasmComponent {
+impl Command for InsertWasmComponent {
     fn apply(self, world: &mut World) {
-        let value = WasmComponent {
-            serialized_value: self.serialized_value,
-        };
-
-        // Avoid duplicate registrations
+        // Get an existing id if it exists, or register it if necessary
         let component_registry = world.get_resource::<WasmComponentRegistry>().unwrap();
         let component_id = if let Some(id) = component_registry.get(&self.type_path) {
             id.clone()
@@ -79,14 +77,13 @@ impl Command for RegisterWasmComponent {
         // Safety:
         // - ComponentId is from the same world as self.
         // - T has the same layout as the one passed during component_id creation.
-        unsafe { entity_commands.insert_by_id(component_id, value) };
+        unsafe { entity_commands.insert_by_id(component_id, self.component) };
     }
 }
 
 pub(crate) fn insert_component(
     commands: &mut Commands,
     type_registry: &AppTypeRegistry,
-    component_registry: &WasmComponentRegistry,
     entity: Entity,
     type_path: String,
     serialized_value: String,
@@ -102,20 +99,10 @@ pub(crate) fn insert_component(
         commands.entity(entity).insert_reflect(output);
     }
     // Handle guest types (inserted as json strings)
-    else if let Some(component_id) = component_registry.get(&type_path) {
-        let value = WasmComponent { serialized_value };
-        let mut entity_commands = commands.entity(entity);
-
-        // Safety:
-        // - ComponentId must be from the same world as self.
-        // - T must have the same layout as the one passed during component_id creation.
-        unsafe { entity_commands.insert_by_id(component_id.clone(), value) };
-    }
-    // Finally, for guest types that are not registered, we can register and insert them via a command
     else {
-        commands.queue(RegisterWasmComponent {
+        commands.queue(InsertWasmComponent {
+            component: WasmComponent { serialized_value },
             entity,
-            serialized_value,
             type_path,
         });
     }

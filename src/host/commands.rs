@@ -15,7 +15,6 @@ impl HostCommands for WasmHost {
         let State::RunSystem {
             mut commands,
             type_registry,
-            component_registry,
         } = self.access()
         else {
             bail!("commands resource is only accessible when running systems")
@@ -29,7 +28,6 @@ impl HostCommands for WasmHost {
             insert_component(
                 &mut commands,
                 type_registry,
-                component_registry,
                 entity,
                 type_path,
                 serialized_component,

@@ -2,7 +2,6 @@ use std::mem::replace;
 
 use crate::{
     asset::ModAsset,
-    component::WasmComponentRegistry,
     engine::Engine,
     runner::{ConfigRunSystem, Runner},
 };
@@ -58,7 +57,6 @@ impl System {
             ParamBuilder,
             ParamBuilder,
             ParamBuilder,
-            ParamBuilder,
             // TODO: FilteredResourcesMutParamBuilder::new(|builder| {}),
             // TODO: QueryParamBuilder::new_box(|builder| {}),
         )
@@ -86,7 +84,6 @@ fn system_runner(
     assets: Res<Assets<ModAsset>>,
     engine: Res<Engine>,
     type_registry: Res<AppTypeRegistry>,
-    component_registry: Res<WasmComponentRegistry>,
     mut commands: Commands,
     // TODO: mut resources: FilteredResourcesMut,
     // TODO: mut query: Query<FilteredEntityMut>,
@@ -123,7 +120,6 @@ fn system_runner(
         ConfigRunSystem {
             commands: &mut commands,
             type_registry: &type_registry,
-            component_registry: &component_registry,
         },
         &params,
     );
