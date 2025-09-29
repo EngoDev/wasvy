@@ -19,11 +19,14 @@ use crate::{
 pub struct ModAsset(Inner);
 
 enum Inner {
+    /// See [ModAsset::take]
     Placeholder,
-    Loaded {
-        instance_pre: InstancePre<WasmHost>,
-    },
-    Ready {
+
+    /// The asset is loaded, but the [SETUP] function has **not** yet run
+    Loaded { instance_pre: InstancePre<WasmHost> },
+
+    /// The asset is loaded and the [SETUP] function has been run
+    Initiated {
         version: Tick,
         instance_pre: InstancePre<WasmHost>,
     },
@@ -42,14 +45,14 @@ impl ModAsset {
         Ok(Self(Inner::Loaded { instance_pre }))
     }
 
-    pub(crate) fn version(&self) -> Option<Tick> {
+    pub(crate) fn version(&self) -> Tick {
         match &self.0 {
-            Inner::Ready { version, .. } => Some(version.clone()),
-            _ => None,
+            Inner::Initiated { version, .. } => version.clone(),
+            _ => Tick::MAX,
         }
     }
 
-    /// Take this asset and leave a placeholder behind
+    /// Take ownership of this asset and leave a placeholder behind
     pub(crate) fn take(&mut self) -> Self {
         replace(self, Self(Inner::Placeholder))
     }
@@ -59,39 +62,36 @@ impl ModAsset {
         let _ = replace(self, value);
     }
 
-    pub(crate) fn setup(
+    /// Initiates mods by running their "setup" function
+    pub(crate) fn initiate(
         self,
         world: &mut World,
         asset_id: &AssetId<ModAsset>,
         mod_name: &str,
     ) -> Result<Self> {
-        let Inner::Loaded { instance_pre } = self.0 else {
-            bail!("Mod is not in Loaded state");
+        let instance_pre = match self.0 {
+            Inner::Loaded { instance_pre } => instance_pre,
+            Inner::Initiated { instance_pre, .. } => instance_pre,
+            Inner::Placeholder => unreachable!(),
         };
 
-        let version = world.change_tick();
+        // Assign a version based on the world tick
+        // This is useful for `system_runner`s to know they should no longer run
+        let asset_version = world.change_tick();
 
         let engine = world.get_resource::<Engine>().unwrap();
         let mut runner = Runner::new(&engine);
-        let results = call(
-            &mut runner,
-            &instance_pre,
-            Config::Setup(ConfigSetup {
-                world,
-                asset_id: &asset_id,
-                asset_version: version,
-                mod_name,
-            }),
-            SETUP,
-            &[],
-        )?;
 
-        if !results.is_empty() {
-            bail!("Mod setup returned values: {:?}, expected []", results);
-        }
+        let config: Config<'_, '_, '_> = Config::Setup(ConfigSetup {
+            world,
+            asset_id,
+            asset_version,
+            mod_name,
+        });
+        call(&mut runner, &instance_pre, config, SETUP, &[], &mut [])?;
 
-        Ok(Self(Inner::Ready {
-            version,
+        Ok(Self(Inner::Initiated {
+            version: asset_version,
             instance_pre,
         }))
     }
@@ -102,18 +102,13 @@ impl ModAsset {
         name: &str,
         config: ConfigRunSystem<'a, 'w, 's>,
         params: &[Val],
-    ) -> Result<Vec<Val>> {
-        let Inner::Ready { instance_pre, .. } = &self.0 else {
+    ) -> Result<()> {
+        let Inner::Initiated { instance_pre, .. } = &self.0 else {
             bail!("Mod is not in Ready state");
         };
 
-        call(
-            runner,
-            instance_pre,
-            Config::RunSystem(config),
-            name,
-            params,
-        )
+        let config = Config::RunSystem(config);
+        call(runner, instance_pre, config, name, params, &mut [])
     }
 }
 
@@ -123,7 +118,8 @@ fn call(
     config: Config,
     name: &str,
     params: &[Val],
-) -> Result<Vec<Val>> {
+    mut results: &mut [Val],
+) -> Result<()> {
     runner.use_store(config, move |mut store| {
         let instance = instance_pre
             .instantiate(&mut store)
@@ -131,13 +127,12 @@ fn call(
 
         let func = instance
             .get_func(&mut store, name)
-            .ok_or(anyhow!("Missing {} function", name))?;
+            .ok_or(anyhow!("Missing {name} function"))?;
 
-        let mut results = vec![];
         func.call(&mut store, params, &mut results)
             .context("Failed to run the desired wasm function")?;
 
-        Ok(results)
+        Ok(())
     })
 }
 

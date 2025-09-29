@@ -20,45 +20,52 @@ pub(crate) fn run_setup(mut world: &mut World, param: &mut SystemState<Setup>) {
         mods,
     } = param.get_mut(world);
 
+    // We need exclusive world access in order to setup mods, so store them here
     let mut setup = Vec::new();
+
     for event in events.read() {
-        if let AssetEvent::LoadedWithDependencies { id } = event {
-            let Some(asset) = assets.get_mut_untracked(*id).map(ModAsset::take) else {
-                continue;
-            };
+        // Load both new assets and hot-reloaded ones
+        let AssetEvent::LoadedWithDependencies { id } = event else {
+            continue;
+        };
 
-            // Find the mod entity matching this asset
-            let Some((entity, name, _)) = mods.iter().find(|&(_, _, m)| m.asset.id() == *id) else {
-                warn!(
-                    "Loaded wasm mod asset, but missing its entity. Did you accidentally load a wasm asset?"
-                );
-                continue;
-            };
+        let Some(asset) = assets.get_mut_untracked(*id).map(ModAsset::take) else {
+            continue;
+        };
 
-            let name = name
-                .and_then(|name| Some(name.as_str()))
-                .unwrap_or("unknown")
-                .to_string();
+        // Find the mod entity matching this asset
+        let Some((entity, name, _)) = mods.iter().find(|&(_, _, m)| m.asset.id() == *id) else {
+            warn!(
+                "Loaded wasm mod asset, but missing its entity. Did you accidentally load a wasm asset?"
+            );
+            continue;
+        };
 
-            setup.push((asset, *id, entity, name));
-        }
+        let name = name
+            .map(|name| name.as_str())
+            .unwrap_or("unknown")
+            .to_string();
+
+        setup.push((asset, *id, entity, name));
     }
 
     for (asset, asset_id, entity, name) in setup {
-        let result = asset.setup(&mut world, &asset_id, &name);
+        // Setup mods with exclusive world access
+        let result = asset.initiate(&mut world, &asset_id, &name);
 
-        let mut assets = world.get_resource_mut::<Assets<ModAsset>>().unwrap();
+        let Setup { mut assets, .. } = param.get_mut(world);
         match result {
-            Ok(asset) => {
+            Ok(initiated_asset) => {
                 info!("Successfully loaded mod \"{}\"", name);
 
-                assets.get_mut(asset_id).unwrap().put(asset);
+                // Replace placeholder
+                assets.get_mut(asset_id).unwrap().put(initiated_asset);
             }
             Err(err) => {
                 error!("Error loading mod \"{}\":\n{:?}", name, err);
 
+                // Remove placeholder asset and the entity holding a handle to it
                 assets.remove(asset_id);
-                drop(assets);
                 world.despawn(entity);
             }
         }

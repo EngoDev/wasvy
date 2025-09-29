@@ -95,13 +95,13 @@ fn system_runner(
     };
 
     // Skip mismatching system versions
-    if asset.version() != Some(input.asset_version) {
+    if asset.version() != input.asset_version {
         return Ok(());
     }
 
     let mut runner = Runner::new(&engine);
 
-    // Setup system param resources
+    // The mod's system param are wit resources we need to initialize first
     let mut params = Vec::with_capacity(input.params.len());
     for param in input.params.iter() {
         params.push(Val::Resource(match param {
@@ -113,7 +113,7 @@ fn system_runner(
         "Running system \"{}\" from \"{}\"",
         input.system_name, input.mod_name
     );
-    let result = asset.run_system(
+    asset.run_system(
         &mut runner,
         &input.system_name,
         ConfigRunSystem {
@@ -122,7 +122,6 @@ fn system_runner(
         },
         &params,
     )?;
-    trace!("got result {:?}", result);
 
     Ok(())
 }
