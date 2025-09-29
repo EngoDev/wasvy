@@ -44,7 +44,7 @@ struct InsertWasmComponent {
 impl Command for InsertWasmComponent {
     fn apply(self, world: &mut World) {
         // Get an existing id if it exists, or register it if necessary
-        let component_registry = world.get_resource::<WasmComponentRegistry>().unwrap();
+        let component_registry = world.get_resource_or_init::<WasmComponentRegistry>();
         let component_id = if let Some(id) = component_registry.get(&self.type_path) {
             id.clone()
         } else {

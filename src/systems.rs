@@ -23,7 +23,9 @@ pub(crate) fn run_setup(mut world: &mut World, param: &mut SystemState<Setup>) {
     let mut setup = Vec::new();
     for event in events.read() {
         if let AssetEvent::LoadedWithDependencies { id } = event {
-            let asset = assets.get_mut_untracked(*id).unwrap().take();
+            let Some(asset) = assets.get_mut_untracked(*id).map(ModAsset::take) else {
+                continue;
+            };
 
             // Find the mod entity matching this asset
             let Some((entity, name, _)) = mods.iter().find(|&(_, _, m)| m.asset.id() == *id) else {

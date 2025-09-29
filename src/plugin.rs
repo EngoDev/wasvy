@@ -41,7 +41,13 @@ impl ModloaderPlugin {
     where
         F: FnMut(&mut Linker),
     {
-        let inner = self.0.get_mut().unwrap().as_mut().unwrap();
+        let inner = self
+            .0
+            .get_mut()
+            .unwrap()
+            .as_mut()
+            .expect("ModloaderPlugin is not built");
+
         f(&mut inner.linker);
         self
     }
@@ -49,7 +55,12 @@ impl ModloaderPlugin {
 
 impl Plugin for ModloaderPlugin {
     fn build(&self, app: &mut App) {
-        let Inner { engine, linker } = self.0.lock().unwrap().take().unwrap();
+        let Inner { engine, linker } = self
+            .0
+            .lock()
+            .unwrap()
+            .take()
+            .expect("ModloaderPlugin is not built");
 
         app.init_asset::<ModAsset>()
             .register_asset_loader(ModAssetLoader { linker })
