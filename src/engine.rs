@@ -26,11 +26,11 @@ pub(crate) fn create_linker(engine: &Engine) -> Linker {
     let engine = engine.inner();
 
     let mut linker = Linker::new(engine);
-    wasmtime_wasi::p2::add_to_linker_sync(&mut linker).expect("Implement common wit interface");
+    wasmtime_wasi::p2::add_to_linker_sync(&mut linker).expect("implement common wit interface");
 
     type Data = wasmtime::component::HasSelf<WasmHost>;
     crate::bindings::wasvy::ecs::app::add_to_linker::<_, Data>(&mut linker, |state| state)
-        .expect("Implement wasvy wit interface");
+        .expect("implement wasvy wit interface");
 
     linker
 }

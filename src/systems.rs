@@ -59,7 +59,10 @@ pub(crate) fn run_setup(mut world: &mut World, param: &mut SystemState<Setup>) {
                 info!("Successfully loaded mod \"{}\"", name);
 
                 // Replace placeholder
-                assets.get_mut(asset_id).unwrap().put(initiated_asset);
+                assets
+                    .get_mut(asset_id)
+                    .expect("asset placeholder not to have moved")
+                    .put(initiated_asset);
             }
             Err(err) => {
                 error!("Error loading mod \"{}\":\n{:?}", name, err);

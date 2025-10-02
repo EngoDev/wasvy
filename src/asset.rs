@@ -79,7 +79,10 @@ impl ModAsset {
         // This is useful for `system_runner`s to know they should no longer run
         let asset_version = world.change_tick();
 
-        let engine = world.get_resource::<Engine>().unwrap();
+        let engine = world
+            .get_resource::<Engine>()
+            .expect("Engine should never be removed from world");
+
         let mut runner = Runner::new(&engine);
 
         let config: Config<'_, '_, '_> = Config::Setup(ConfigSetup {

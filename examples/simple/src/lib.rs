@@ -39,8 +39,8 @@ impl Guest for GuestComponent {
         let component_1 = MyStruct { value: 123 };
         let component_2 = Transform::IDENTITY.looking_at(Vec3::ONE, Vec3::Y);
 
-        let component_1_json = serde_json::to_string(&component_1).unwrap();
-        let component_2_json = serde_json::to_string(&component_2).unwrap();
+        let component_1_json = serde_json::to_string(&component_1).expect("serializable component");
+        let component_2_json = serde_json::to_string(&component_2).expect("serializable component");
 
         commands.spawn(&[
             ("simple::MyStruct".to_string(), component_1_json),

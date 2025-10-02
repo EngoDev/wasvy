@@ -48,7 +48,9 @@ impl HostApp for WasmHost {
                 Schedule::Update => Update,
             };
 
-            let mut schedules = world.get_resource_mut::<Schedules>().unwrap();
+            let mut schedules = world
+                .get_resource_mut::<Schedules>()
+                .expect("running in an App");
             schedules.add_systems(schedule, boxed_system);
         }
 

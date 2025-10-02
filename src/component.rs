@@ -3,7 +3,7 @@ use std::alloc::Layout;
 use anyhow::Result;
 use bevy::{
     ecs::{
-        component::{ComponentDescriptor, ComponentId},
+        component::{ComponentDescriptor, ComponentId, Components},
         reflect::ReflectCommandExt,
     },
     platform::collections::HashMap,
@@ -15,6 +15,8 @@ use serde::de::DeserializeSeed;
 pub type TypePath = String;
 
 /// Registry for storing the components that are registered from WASM assets.
+///
+/// Note that this is unique per world, not per app like the [AppTypeRegistry](bevy::ecs::reflect::AppTypeRegistry)
 #[derive(Default, Clone, Debug, Resource, Deref, DerefMut)]
 pub struct WasmComponentRegistry(pub HashMap<TypePath, ComponentId>);
 
@@ -43,11 +45,13 @@ struct InsertWasmComponent {
 
 impl Command for InsertWasmComponent {
     fn apply(self, world: &mut World) {
-        // Get an existing id if it exists, or register it if necessary
+        // Get an existing id if it exists
         let component_registry = world.get_resource_or_init::<WasmComponentRegistry>();
         let component_id = if let Some(id) = component_registry.get(&self.type_path) {
             id.clone()
-        } else {
+        }
+        // Register it if necessary
+        else {
             // Safety:
             // - the drop fn is usable on this component type
             // - the component is safe to access from any thread
@@ -66,7 +70,9 @@ impl Command for InsertWasmComponent {
 
             let id = world.register_component_with_descriptor(descriptor);
 
-            let mut component_registry = world.get_resource_mut::<WasmComponentRegistry>().unwrap();
+            let mut component_registry = world
+                .get_resource_mut::<WasmComponentRegistry>()
+                .expect("this command initializes it");
             component_registry.insert(self.type_path, id);
 
             id

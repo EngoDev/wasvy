@@ -58,9 +58,7 @@ impl WasmHost {
     /// Access to the data contained in the [`WasmHost`]
     pub(crate) fn access(&mut self) -> State<'_> {
         let table = &mut self.table;
-        self.data
-            .access(table)
-            .expect("Attempting to access uninitialized WasmHost")
+        self.data.access(table).expect("WasmHost to be initialized")
     }
 }
 

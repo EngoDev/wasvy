@@ -44,7 +44,7 @@ impl ModloaderPlugin {
         let inner = self
             .0
             .get_mut()
-            .unwrap()
+            .expect("ModloaderPlugin is not locked")
             .as_mut()
             .expect("ModloaderPlugin is not built");
 
@@ -58,7 +58,7 @@ impl Plugin for ModloaderPlugin {
         let Inner { engine, linker } = self
             .0
             .lock()
-            .unwrap()
+            .expect("ModloaderPlugin is not locked")
             .take()
             .expect("ModloaderPlugin is not built");
 
@@ -79,7 +79,7 @@ impl Plugin for ModloaderPlugin {
             let resolved_watch_setting = app
                 .world()
                 .get_resource::<AssetServer>()
-                .unwrap()
+                .expect("ModloaderPlugin requires AssetPlugin to be loaded.")
                 .watching_for_changes();
 
             if !user_overrode_watch_setting && !resolved_watch_setting {
