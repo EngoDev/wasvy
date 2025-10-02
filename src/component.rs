@@ -3,7 +3,7 @@ use std::alloc::Layout;
 use anyhow::Result;
 use bevy::{
     ecs::{
-        component::{ComponentDescriptor, ComponentId, Components},
+        component::{ComponentDescriptor, ComponentId},
         reflect::ReflectCommandExt,
     },
     platform::collections::HashMap,
