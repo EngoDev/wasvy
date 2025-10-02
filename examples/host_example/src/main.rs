@@ -16,13 +16,18 @@ fn main() {
             EguiPlugin::default(),
             WorldInspectorPlugin::new(),
         ))
-        .add_systems(Startup, startup)
+        .add_systems(Startup, (load_mods, setup))
         .run();
 }
 
 /// Access the modloader's api through the Mods interface
-fn startup(mut mods: Mods) {
+fn load_mods(mut mods: Mods) {
     // Load one (or several) mods at once from the asset directory!
     mods.load("mods/simple.wasm");
     mods.load("mods/python.wasm");
+}
+
+fn setup(mut commands: Commands) {
+    // Having a camera in the scene is necessary for egui
+    commands.spawn(Camera3d::default());
 }
